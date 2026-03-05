@@ -873,11 +873,16 @@ async function clearAllData(){ if(!confirm('Delete ALL data including cloud? Thi
 // ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
+// ── HARDCODED CONFIG — works on every device automatically ──
+const SUPABASE_URL = 'https://rggjndnqleqerbbyprmt.supabase.co';
+const SUPABASE_KEY = 'eyJ...your full anon key here...';
+
 (async function init(){
-  const cfg=getCfg();
-  if(cfg.url&&cfg.key){
-    initSB();
+  // Always use hardcoded config
+  if(!getCfg().url){
+    localStorage.setItem('sb_cfg', JSON.stringify({url: SUPABASE_URL, key: SUPABASE_KEY}));
   }
+  initSB();
   if(!_sb){ return; } // show login, wait for configure
   try{
     const {data:{session}}=await _sb.auth.getSession();
@@ -891,3 +896,4 @@ async function clearAllData(){ if(!confirm('Delete ALL data including cloud? Thi
 </script>
 </body>
 </html>
+
