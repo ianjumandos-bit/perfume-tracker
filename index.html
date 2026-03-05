@@ -49,10 +49,10 @@
 
 /* ===== SUPABASE CONFIG PANEL ===== */
 #configPanel {
-    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99998;
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999999;
     align-items:center;justify-content:center;padding:20px;
 }
-#configPanel.open { display:flex; }
+#configPanel.open { display:flex !important; }
 .config-box {
     background:#fff;border-radius:14px;padding:28px;max-width:500px;width:100%;
     box-shadow:0 20px 60px rgba(0,0,0,0.3);
@@ -310,9 +310,12 @@ function openConfigPanel() {
     const cfg = getConfig();
     if (cfg.url) document.getElementById('cfgUrl').value = cfg.url;
     if (cfg.key) document.getElementById('cfgKey').value = cfg.key;
-    document.getElementById('configPanel').classList.add('open');
+    const panel = document.getElementById('configPanel');
+    panel.style.display = 'flex';
 }
-function closeConfigPanel() { document.getElementById('configPanel').classList.remove('open'); }
+function closeConfigPanel() {
+    document.getElementById('configPanel').style.display = 'none';
+}
 
 function initSupabase() {
     const cfg = getConfig();
