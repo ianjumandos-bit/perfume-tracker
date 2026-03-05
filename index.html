@@ -158,8 +158,8 @@ th,td{padding:8px;border-bottom:1px solid #f1f5ff;text-align:left;font-size:14px
     </div>
 </div>
 
-<!-- SUPABASE CONFIG PANEL -->
-<div id="configPanel">
+<!-- SUPABASE CONFIG PANEL — inside its own fixed overlay, above loginScreen -->
+<div id="configPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999999;align-items:center;justify-content:center;padding:20px;">
     <div class="config-box">
         <h3>⚙️ Supabase Configuration</h3>
         <p>Paste your Supabase credentials below. You only need to do this once — they'll be saved in your browser.</p>
