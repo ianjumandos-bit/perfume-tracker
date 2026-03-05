@@ -1,115 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Perfume Production & Sales Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* ===== CLOUD SYNC UI ===== */
-#cloudBar {
-    display:flex;align-items:center;gap:10px;padding:8px 24px;
-    background:#f0f4ff;border-bottom:1px solid #dbe6ff;font-size:13px;
-    flex-wrap:wrap;
-}
-#cloudBar .cb-left { display:flex;align-items:center;gap:8px;flex:1; }
-#syncStatus { font-weight:600;padding:4px 10px;border-radius:20px;font-size:12px; }
-.sync-saved   { background:#c8f7d4;color:#0b4f1a; }
-.sync-saving  { background:#fff3cd;color:#856404; }
-.sync-error   { background:#f8d7da;color:#721c24; }
-.sync-offline { background:#e2e3e5;color:#383d41; }
-.sync-unsaved { background:#cfe2ff;color:#084298; }
-
-/* ===== LOGIN SCREEN ===== */
-#loginScreen {
-    position:fixed;inset:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-    display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;
-}
-.login-box {
-    background:#fff;border-radius:16px;padding:36px 32px;max-width:420px;width:100%;
-    box-shadow:0 20px 60px rgba(0,0,0,0.25);
-}
-.login-box h2 { font-size:22px;font-weight:800;margin-bottom:4px;color:#1a1a2e; }
-.login-box .sub { color:#667eea;font-size:14px;margin-bottom:24px;font-weight:600; }
-.login-box label { display:block;font-size:13px;font-weight:700;color:#444;margin-bottom:4px; }
-.login-box input { width:100%;padding:10px 12px;border:2px solid #dbe6ff;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;transition:border 0.2s; }
-.login-box input:focus { border-color:#667eea; }
-.login-box .btn-login { width:100%;padding:12px;background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px; }
-.login-box .btn-login:hover { opacity:0.93; }
-.login-box .toggle-link { text-align:center;margin-top:14px;font-size:13px;color:#667;cursor:pointer; }
-.login-box .toggle-link span { color:#667eea;font-weight:700;text-decoration:underline; }
-.login-box .msg { padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px;display:none; }
-.msg.error { background:#fde;color:#900;display:block; }
-.msg.success { background:#dfd;color:#060;display:block; }
-#loginSetup { background:#fffbe6;border:2px solid #ffc107;border-radius:10px;padding:14px;margin-bottom:18px;font-size:13px;line-height:1.6; }
-#loginSetup strong { color:#333; }
-#loginSetup code { background:#f0e8ff;padding:2px 6px;border-radius:4px;font-size:12px;color:#5c2d91; }
-.setup-steps { margin-top:8px;padding-left:16px; }
-.setup-steps li { margin-bottom:4px; }
-
-/* ===== SUPABASE CONFIG PANEL ===== */
-#configPanel {
-    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999999;
-    align-items:center;justify-content:center;padding:20px;
-}
-#configPanel.open { display:flex !important; }
-.config-box {
-    background:#fff;border-radius:14px;padding:28px;max-width:500px;width:100%;
-    box-shadow:0 20px 60px rgba(0,0,0,0.3);
-}
-.config-box h3 { font-size:18px;font-weight:800;margin-bottom:6px; }
-.config-box p { font-size:13px;color:#555;margin-bottom:16px;line-height:1.6; }
-.config-box label { font-size:13px;font-weight:700;display:block;margin-bottom:4px; }
-.config-box input { width:100%;padding:9px 12px;border:2px solid #dbe6ff;border-radius:8px;font-size:13px;margin-bottom:12px; }
-.config-box .actions { display:flex;gap:8px;justify-content:flex-end;margin-top:8px; }
-
-table tbody tr { transition: all 0.2s ease; }
-table tbody tr:hover { transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
-.scent-pill { transition: all 0.2s ease; cursor: context-menu; }
-.scent-pill:hover { transform: scale(1.05); box-shadow: 0 2px 6px rgba(102,126,234,0.3); }
-.scent-pill-Paid { background: #c8f7d4 !important; border-color: #28a745 !important; color: #0b4f1a !important; }
-.scent-pill-Released { background: #c2f0ff !important; border-color: #0b7ec4 !important; color: #0b4860 !important; }
-.scent-pill-Pending { background: #ffd966 !important; border-color: #c9a800 !important; color: #3b2d00 !important; }
-.pill-wrap { position:relative;display:inline-block;margin:2px;padding-bottom:12px;margin-bottom:-10px; }
-.pill-popup { opacity:0;pointer-events:none;position:absolute;bottom:calc(100% - 10px);left:50%;transform:translateX(-50%) translateY(6px);z-index:99999;background:#fff;border:1.5px solid #dbe6ff;border-radius:10px;box-shadow:0 8px 28px rgba(102,126,234,0.25);padding:5px;min-width:145px;white-space:nowrap;transition:opacity 0.18s ease,transform 0.18s ease; }
-.pill-popup::after { content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);border:7px solid transparent;border-bottom:0;border-top-color:#dbe6ff; }
-.pill-popup.open { opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0); }
-.pill-popup button { display:flex;align-items:center;gap:8px;width:100%;padding:8px 11px;border-radius:7px;border:none;background:transparent;color:#2c3e50;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.12s;text-align:left; }
-.pill-popup button:hover { background:#f0f3ff; }
-.pill-popup .pp-dot { width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0; }
-.pp-dot-Paid { background:#28a745; } .pp-dot-Released { background:#0b7ec4; } .pp-dot-Pending { background:#e6b800; } .pp-dot-clear { background:#ccc; }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:#f3f6fb;padding:24px}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f3f6fb;padding:24px}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
+.login-box{background:#fff;border-radius:16px;padding:36px 32px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25);max-height:90vh;overflow-y:auto}
+.login-box h2{font-size:22px;font-weight:800;margin-bottom:4px;color:#1a1a2e}
+.login-box .sub{color:#667eea;font-size:14px;margin-bottom:20px;font-weight:600}
+.login-box label{display:block;font-size:13px;font-weight:700;color:#444;margin-bottom:4px}
+.login-box input[type=email],.login-box input[type=password]{width:100%;padding:10px 12px;border:2px solid #dbe6ff;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none}
+.login-box input:focus{border-color:#667eea}
+.btn-login{width:100%;padding:12px;background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+.toggle-link{text-align:center;margin-top:14px;font-size:13px;color:#667;cursor:pointer}
+.toggle-link span{color:#667eea;font-weight:700;text-decoration:underline}
+#loginMsg{padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px;display:none}
+#loginMsg.error{background:#fde;color:#900;display:block}
+#loginMsg.success{background:#dfd;color:#060;display:block}
+#setupBox{background:#fffbe6;border:2px solid #ffc107;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.6}
+.setup-steps{margin-top:8px;padding-left:16px}
+.setup-steps li{margin-bottom:4px}
+
+/* ── CONFIG PANEL ── */
+#configOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:99999;align-items:center;justify-content:center;padding:20px}
+.config-box{background:#fff;border-radius:14px;padding:28px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto}
+.config-box h3{font-size:18px;font-weight:800;margin-bottom:8px}
+.config-box p{font-size:13px;color:#555;margin-bottom:14px;line-height:1.6}
+.config-box label{font-size:13px;font-weight:700;display:block;margin-bottom:4px}
+.config-box input{width:100%;padding:9px 12px;border:2px solid #dbe6ff;border-radius:8px;font-size:13px;margin-bottom:12px}
+.cfg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.sql-block{margin-top:14px;background:#f8f9fa;border-radius:8px;padding:12px;font-size:12px;color:#555;line-height:1.7}
+.sql-block code{background:#eee;padding:2px 5px;border-radius:4px;font-size:11px;display:block;margin-top:6px;white-space:pre-wrap;word-break:break-all}
+
+/* ── CLOUD BAR ── */
+#cloudBar{display:flex;align-items:center;gap:10px;padding:8px 24px;background:#f0f4ff;border-bottom:1px solid #dbe6ff;font-size:13px;flex-wrap:wrap}
+#cloudBar .cb-left{display:flex;align-items:center;gap:8px;flex:1}
+#syncStatus{font-weight:600;padding:4px 10px;border-radius:20px;font-size:12px}
+.ss-saved{background:#c8f7d4;color:#0b4f1a}
+.ss-saving{background:#fff3cd;color:#856404}
+.ss-error{background:#f8d7da;color:#721c24}
+.ss-offline{background:#e2e3e5;color:#383d41}
+.ss-unsaved{background:#cfe2ff;color:#084298}
+
+/* ── MAIN APP ── */
 .container{max-width:1200px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 8px 40px rgba(10,20,50,0.08)}
 header{background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;padding:20px 24px;display:flex;justify-content:space-between;align-items:center}
 header h1{font-size:20px}
-.header-user { font-size:13px;opacity:0.85;display:flex;align-items:center;gap:10px; }
-.toolbar{display:flex;justify-content:space-between;gap:12px;padding:16px}
-.toolbar .left,.toolbar .right{display:flex;gap:8px;align-items:center}
+.header-user{font-size:13px;opacity:0.85;display:flex;align-items:center;gap:10px}
+.toolbar{display:flex;justify-content:space-between;gap:12px;padding:16px;flex-wrap:wrap}
+.toolbar .left,.toolbar .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 button{cursor:pointer;border:0;padding:8px 12px;border-radius:8px;background:#667eea;color:#fff;font-weight:600}
-.btn-secondary{background:#6c757d} .btn-danger{background:#dc3545} .btn-success{background:#28a745}
+.btn-secondary{background:#6c757d}.btn-danger{background:#dc3545}.btn-success{background:#28a745}
 .tabs{display:flex;border-bottom:1px solid #e6eef9}
-.tab{padding:12px 16px;cursor:pointer;color:#3b4a67;flex:1;text-align:center;font-weight:600}
+.tab{padding:12px 16px;cursor:pointer;color:#3b4a67;flex:1;text-align:center;font-weight:600;font-size:14px}
 .tab.active{background:#fff;color:#2e44ff;border-bottom:3px solid #2e44ff}
 .content{padding:18px}
-.page{display:none} .page.active{display:block}
-.grid{display:grid;gap:12px} .grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.page{display:none}.page.active{display:block}
 .card{background:#fff;padding:14px;border-radius:10px;border:1px solid #edf2fb}
 input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #dbe6ff}
 table{width:100%;border-collapse:collapse;margin-top:10px}
 th,td{padding:8px;border-bottom:1px solid #f1f5ff;text-align:left;font-size:14px}
+table tbody tr{transition:all 0.2s ease}
+table tbody tr:hover{transform:translateX(4px)}
 .status-badge{padding:6px 10px;border-radius:20px;font-weight:700}
-.status-Pending{background:#ffd966;color:#3b2d00} .status-Released{background:#c2f0ff;color:#0b4860} .status-Paid{background:#c8f7d4;color:#0b4f1a}
+.status-Pending{background:#ffd966;color:#3b2d00}
+.status-Released{background:#c2f0ff;color:#0b4860}
+.status-Paid{background:#c8f7d4;color:#0b4f1a}
 .low{border-left:4px solid #dc3545;background:#fff5f5}
-.controls{display:flex;gap:8px} .small{padding:6px 8px;font-size:13px}
-.summary{display:flex;gap:12px;margin-bottom:12px}
-.summary .s{flex:1;padding:14px;border-radius:10px;font-weight:700;text-align:center}
-.summary .s > div:not(.muted){color:#000}
+.small{padding:6px 8px;font-size:13px}
+.summary{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.summary .s{flex:1;min-width:100px;padding:14px;border-radius:10px;font-weight:700;text-align:center}
+.summary .s>div:not(.muted){color:#000}
 .s.expense-card{background:#f8f9fa;color:#212529;border:1px solid #dee2e6}
-.batch-card{border:1px solid #e8f0ff;padding:12px;border-radius:10px;margin-bottom:12px}
-.actions{display:flex;gap:6px} .muted{color:#6b7280;font-size:13px}
-.top-controls{display:flex;justify-content:flex-end;gap:8px;align-items:center}
-.scent-pill{display:inline-block;padding:4px 10px;margin:2px;border:2px solid #667eea;border-radius:16px;background:#f0f3ff;font-size:13px;font-weight:600}
+.actions{display:flex;gap:6px}
+.muted{color:#6b7280;font-size:13px}
+.scent-pill{display:inline-block;padding:4px 10px;margin:2px;border:2px solid #667eea;border-radius:16px;background:#f0f3ff;font-size:13px;font-weight:600;transition:all 0.2s ease;cursor:context-menu}
+.scent-pill:hover{transform:scale(1.05)}
+.scent-pill-Paid{background:#c8f7d4!important;border-color:#28a745!important;color:#0b4f1a!important}
+.scent-pill-Released{background:#c2f0ff!important;border-color:#0b7ec4!important;color:#0b4860!important}
+.scent-pill-Pending{background:#ffd966!important;border-color:#c9a800!important;color:#3b2d00!important}
+.pill-wrap{position:relative;display:inline-block;margin:2px;padding-bottom:12px;margin-bottom:-10px}
+.pill-popup{opacity:0;pointer-events:none;position:absolute;bottom:calc(100% - 10px);left:50%;transform:translateX(-50%) translateY(6px);z-index:9999;background:#fff;border:1.5px solid #dbe6ff;border-radius:10px;box-shadow:0 8px 28px rgba(102,126,234,0.25);padding:5px;min-width:145px;white-space:nowrap;transition:opacity 0.18s,transform 0.18s}
+.pill-popup::after{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);border:7px solid transparent;border-bottom:0;border-top-color:#dbe6ff}
+.pill-popup.open{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+.pill-popup button{display:flex;align-items:center;gap:8px;width:100%;padding:8px 11px;border-radius:7px;border:none;background:transparent;color:#2c3e50;font-size:13px;font-weight:600;cursor:pointer}
+.pill-popup button:hover{background:#f0f3ff}
+.pp-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0}
+.pp-dot-Paid{background:#28a745}.pp-dot-Released{background:#0b7ec4}.pp-dot-Pending{background:#e6b800}.pp-dot-clear{background:#ccc}
 .inventory-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .inventory-column{display:flex;flex-direction:column;gap:8px}
 .column-header{font-weight:800;font-size:16px;padding:10px;background:#f8f9fa;border-radius:8px;text-align:center}
@@ -117,63 +100,61 @@ th,td{padding:8px;border-bottom:1px solid #f1f5ff;text-align:left;font-size:14px
 .perfume-status-sold{background:#e9fbe9;border-left:4px solid #28a745}
 .perfume-status-added{background:#fff9e6;border-left:4px solid #ffc107}
 .perfume-status-pending{background:#fff5f5;border-left:4px solid #dc3545}
-.sold-toggle-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:#e9fbe9;border:2px solid #28a745;border-radius:8px;color:#0b4f1a;font-weight:700;font-size:14px;cursor:pointer;margin-top:10px;transition:background 0.15s;}
-.sold-toggle-btn:hover{background:#d0f5db;}
-.sold-items-container{display:none;margin-top:6px;background:#f0faf2;border-radius:8px;padding:8px;border:1px solid #c8f7d4;}
-.sold-items-container.open{display:block;}
-@media(max-width:900px){.grid.cols-3{grid-template-columns:1fr}.inventory-grid{grid-template-columns:1fr}}
+.sold-toggle-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:#e9fbe9;border:2px solid #28a745;border-radius:8px;color:#0b4f1a;font-weight:700;font-size:14px;cursor:pointer;margin-top:10px}
+.sold-items-container{display:none;margin-top:6px;background:#f0faf2;border-radius:8px;padding:8px;border:1px solid #c8f7d4}
+.sold-items-container.open{display:block}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;padding:20px;z-index:9998}
+#modalContent{background:#fff;padding:18px;border-radius:10px;max-width:720px;width:100%;max-height:90vh;overflow:auto}
+@media(max-width:900px){.inventory-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
+<!-- ══════════════════ LOGIN SCREEN ══════════════════ -->
 <div id="loginScreen">
-    <div class="login-box">
-        <h2>🌸 Perfume Tracker</h2>
-        <div class="sub">Cloud-Synced — Access Anywhere</div>
+  <div class="login-box">
+    <h2>🌸 Perfume Tracker</h2>
+    <div class="sub">Cloud-Synced — Access Anywhere</div>
 
-        <div id="loginSetup">
-            <strong>⚙️ First time? Quick setup needed:</strong>
-            <ol class="setup-steps">
-                <li>Go to <strong>supabase.com</strong> → create free account</li>
-                <li>Create a new project (save your password)</li>
-                <li>Go to <strong>Project Settings → API</strong></li>
-                <li>Copy your <strong>Project URL</strong> and <strong>anon/public key</strong></li>
-                <li>Click <strong>"Configure Supabase"</strong> below and paste them</li>
-            </ol>
-        </div>
-
-        <div id="loginMsg" class="msg"></div>
-        <div id="loginForm">
-            <label>Email</label>
-            <input id="loginEmail" type="email" placeholder="you@email.com">
-            <label>Password</label>
-            <input id="loginPassword" type="password" placeholder="••••••••">
-            <button class="btn-login" onclick="handleLogin()">Sign In</button>
-            <div class="toggle-link" onclick="toggleAuthMode()">No account? <span>Sign up for free</span></div>
-        </div>
-        <div style="margin-top:14px;text-align:center">
-            <button onclick="openConfigPanel()" style="background:#f0f3ff;color:#667eea;font-size:12px;padding:6px 14px">⚙️ Configure Supabase</button>
-        </div>
+    <div id="setupBox">
+      <strong>⚙️ First time? 3 quick steps:</strong>
+      <ol class="setup-steps">
+        <li>Go to <strong>supabase.com</strong> → free account → New Project</li>
+        <li>Settings → API → copy <strong>Project URL</strong> + <strong>anon key</strong></li>
+        <li>Click <strong>"⚙️ Configure"</strong> below, paste them, then sign up</li>
+      </ol>
     </div>
+
+    <div id="loginMsg"></div>
+    <label>Email</label>
+    <input id="loginEmail" type="email" placeholder="you@email.com">
+    <label>Password</label>
+    <input id="loginPassword" type="password" placeholder="••••••••">
+    <button class="btn-login" id="loginBtn" onclick="handleLogin()">Sign In</button>
+    <div class="toggle-link" onclick="toggleAuthMode()">No account? <span id="toggleText">Sign up for free</span></div>
+
+    <div style="text-align:center;margin-top:16px">
+      <button id="cfgBtn" style="background:#f0f3ff;color:#667eea;font-size:13px;padding:8px 18px;border:2px solid #dbe6ff;border-radius:8px;cursor:pointer;font-weight:700" onclick="openCfg()">⚙️ Configure Supabase</button>
+    </div>
+  </div>
 </div>
 
-<!-- SUPABASE CONFIG PANEL — inside its own fixed overlay, above loginScreen -->
-<div id="configPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999999;align-items:center;justify-content:center;padding:20px;">
-    <div class="config-box">
-        <h3>⚙️ Supabase Configuration</h3>
-        <p>Paste your Supabase credentials below. You only need to do this once — they'll be saved in your browser.</p>
-        <label>Project URL</label>
-        <input id="cfgUrl" placeholder="https://xxxxxxxxxx.supabase.co">
-        <label>Anon/Public Key</label>
-        <input id="cfgKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
-        <div class="actions">
-            <button onclick="closeConfigPanel()" style="background:#6c757d">Cancel</button>
-            <button onclick="saveConfig()" style="background:#667eea">Save & Connect</button>
-        </div>
-        <div style="margin-top:14px;background:#f8f9fa;border-radius:8px;padding:12px;font-size:12px;color:#555;line-height:1.7">
-            <strong>📋 Also run this SQL in Supabase → SQL Editor:</strong><br>
-            <code style="background:#eee;padding:2px 5px;border-radius:4px;font-size:11px;display:block;margin-top:6px;white-space:pre-wrap">CREATE TABLE IF NOT EXISTS perfume_data (
+<!-- ══════════════════ CONFIG OVERLAY ══════════════════ -->
+<div id="configOverlay" onclick="bgCloseCfg(event)">
+  <div class="config-box" onclick="event.stopPropagation()">
+    <h3>⚙️ Supabase Configuration</h3>
+    <p>Paste your credentials once — saved in browser forever.</p>
+    <label>Project URL</label>
+    <input id="cfgUrl" placeholder="https://xxxxxxxxxx.supabase.co">
+    <label>Anon / Public Key</label>
+    <input id="cfgKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+    <div class="cfg-actions">
+      <button onclick="closeCfg()" style="background:#6c757d">Cancel</button>
+      <button onclick="saveAndConnect()" style="background:#28a745">Save & Connect</button>
+    </div>
+    <div class="sql-block">
+      <strong>📋 Run this once in Supabase → SQL Editor → New Query:</strong>
+      <code>CREATE TABLE IF NOT EXISTS perfume_data (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id uuid REFERENCES auth.users NOT NULL,
   data jsonb NOT NULL,
@@ -182,417 +163,730 @@ th,td{padding:8px;border-bottom:1px solid #f1f5ff;text-align:left;font-size:14px
 ALTER TABLE perfume_data ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users own data" ON perfume_data
   FOR ALL USING (auth.uid() = user_id);
-CREATE UNIQUE INDEX IF NOT EXISTS perfume_data_user_idx ON perfume_data(user_id);</code>
-        </div>
+CREATE UNIQUE INDEX IF NOT EXISTS perfume_data_user_idx
+  ON perfume_data(user_id);</code>
     </div>
+  </div>
 </div>
 
-<!-- MAIN APP -->
-<div class="container" id="mainApp" style="display:none">
+<!-- ══════════════════ MAIN APP ══════════════════ -->
+<div id="mainApp" style="display:none">
+  <div class="container">
     <header>
-        <h1>🌸 Perfume Production & Sales Tracker</h1>
-        <div class="header-user">
-            <span id="userEmailDisplay"></span>
-            <button onclick="handleLogout()" style="background:rgba(255,255,255,0.2);font-size:12px;padding:5px 10px">Sign Out</button>
-        </div>
+      <h1>🌸 Perfume Production & Sales Tracker</h1>
+      <div class="header-user">
+        <span id="userEmail"></span>
+        <button onclick="handleLogout()" style="background:rgba(255,255,255,0.2);font-size:12px;padding:5px 10px">Sign Out</button>
+      </div>
     </header>
 
-    <!-- CLOUD SYNC BAR -->
     <div id="cloudBar">
-        <div class="cb-left">
-            <span>☁️ Cloud Sync:</span>
-            <span id="syncStatus" class="sync-status sync-offline">Connecting...</span>
-            <span id="lastSaved" class="muted"></span>
-        </div>
-        <button onclick="forceSave()" style="background:#667eea;font-size:12px;padding:5px 12px">💾 Save Now</button>
+      <div class="cb-left">
+        <span>☁️ Cloud Sync:</span>
+        <span id="syncStatus" class="ss-offline">⚫ Offline</span>
+        <span id="lastSaved" class="muted"></span>
+      </div>
+      <button onclick="forceSave()" style="font-size:12px;padding:5px 12px">💾 Save Now</button>
     </div>
 
     <div class="toolbar">
-        <div class="left">
-            <button onclick="openNewBatchModal()">+ New Batch</button>
-            <button onclick="openBulkOrderModal()">+ Bulk Order</button>
-            <button onclick="openNewScentModal()">+ Add Scent</button>
-            <button onclick="openNewExpenseModal()">+ Add Expense</button>
-        </div>
-        <div class="right top-controls">
-            <button class="btn-secondary" onclick="exportData()">Export Backup</button>
-            <label style="background:#2e44ff;color:#fff;padding:8px 10px;border-radius:8px;cursor:pointer"><input id="importFile" type="file" accept=".json" style="display:none" onchange="importFromFile(event)">Import</label>
-            <button class="btn-danger" onclick="clearAllData()">Clear All</button>
-        </div>
+      <div class="left">
+        <button onclick="openNewBatchModal()">+ New Batch</button>
+        <button onclick="openBulkOrderModal()">+ Bulk Order</button>
+        <button onclick="openNewScentModal()">+ Add Scent</button>
+        <button onclick="openNewExpenseModal()">+ Add Expense</button>
+      </div>
+      <div class="right">
+        <button class="btn-secondary" onclick="exportData()">Export Backup</button>
+        <label style="background:#2e44ff;color:#fff;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600">
+          <input id="importFile" type="file" accept=".json" style="display:none" onchange="importFromFile(event)">Import
+        </label>
+        <button class="btn-danger" onclick="clearAllData()">Clear All</button>
+      </div>
     </div>
 
     <div class="tabs">
-        <div class="tab active" onclick="switchTab(0)">Batch Orders</div>
-        <div class="tab" onclick="switchTab(1)">Bulk Orders</div>
-        <div class="tab" onclick="switchTab(2)">Inventory</div>
-        <div class="tab" onclick="switchTab(3)">Expenses</div>
-        <div class="tab" onclick="switchTab(4)">Sales</div>
-        <div class="tab" onclick="switchTab(5)">Best Sellers</div>
+      <div class="tab active" onclick="switchTab(0)">Batch Orders</div>
+      <div class="tab" onclick="switchTab(1)">Bulk Orders</div>
+      <div class="tab" onclick="switchTab(2)">Inventory</div>
+      <div class="tab" onclick="switchTab(3)">Expenses</div>
+      <div class="tab" onclick="switchTab(4)">Sales</div>
+      <div class="tab" onclick="switchTab(5)">Best Sellers</div>
     </div>
 
     <div class="content">
-        <div id="page-0" class="page active"><div id="batchesContainer"></div></div>
-        <div id="page-1" class="page"><div id="bulkOrdersContainer"></div></div>
-        <div id="page-2" class="page">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px">
-                <div style="width:60%"><label>Search scent</label><input id="inventorySearch" placeholder="Type scent name..." oninput="renderInventory()"></div>
-                <div style="width:38%;display:flex;gap:8px;align-items:center"><button onclick="openNewScentModal()">Add Scent</button></div>
-            </div>
-            <div id="inventoryList"></div>
+      <div id="page-0" class="page active"><div id="batchesContainer"></div></div>
+      <div id="page-1" class="page"><div id="bulkOrdersContainer"></div></div>
+      <div id="page-2" class="page">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px">
+          <div style="width:60%"><label>Search scent</label><input id="inventorySearch" placeholder="Type scent name..." oninput="renderInventory()"></div>
+          <div><button onclick="openNewScentModal()">Add Scent</button></div>
         </div>
-        <div id="page-3" class="page">
-            <div class="summary" id="expenseSummary"><div class="s blue"><div class="muted">Total Expenses</div><div id="expTotal">₱0</div></div></div>
-            <div style="display:flex;gap:8px;margin-bottom:8px">
-                <select id="expenseCategoryFilter" onchange="renderExpenses()"><option value="">All Categories</option><option>Fragrance Oil</option><option>DPG</option><option>PGA</option><option>Fixative</option><option>Fragrance Bottles</option><option>Others</option></select>
-                <select id="expenseBatchFilter" onchange="renderExpenses()"><option value="">All Batches</option></select>
-                <input id="expenseItemFilter" placeholder="Search item..." oninput="renderExpenses()">
-            </div>
-            <table><thead><tr><th>Date</th><th>Category</th><th>Item</th><th>Qty/Unit</th><th>Price (₱)</th><th>Batch</th><th>Action</th></tr></thead><tbody id="expensesTable"></tbody></table>
+        <div id="inventoryList"></div>
+      </div>
+      <div id="page-3" class="page">
+        <div class="summary" id="expenseSummary"></div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <select id="expenseCategoryFilter" onchange="renderExpenses()"><option value="">All Categories</option><option>Fragrance Oil</option><option>DPG</option><option>PGA</option><option>Fixative</option><option>Fragrance Bottles</option><option>Others</option></select>
+          <select id="expenseBatchFilter" onchange="renderExpenses()"><option value="">All Batches</option></select>
+          <input id="expenseItemFilter" placeholder="Search item..." oninput="renderExpenses()" style="width:auto;flex:1">
         </div>
-        <div id="page-4" class="page">
-            <div class="summary" style="margin-bottom:12px">
-                <div class="s green"><div class="muted">Total Paid</div><div id="totalPaid">₱0</div></div>
-                <div class="s yellow"><div class="muted">Released</div><div id="totalPending">₱0</div></div>
-                <div class="s red"><div class="muted">Pending</div><div id="totalUnpaid">₱0</div></div>
-                <div class="s blue"><div class="muted">Overall</div><div id="overallSales">₱0</div></div>
-            </div>
-            <div style="margin-bottom:10px;display:flex;gap:8px">
-                <select id="salesBatchFilter" onchange="renderSales()"><option value="">All Batches</option></select>
-                <select id="salesStatusFilter" onchange="renderSales()"><option value="">All Status</option><option>Paid</option><option>Released</option><option>Pending</option></select>
-                <input id="salesFrom" type="date" onchange="renderSales()">
-                <input id="salesTo" type="date" onchange="renderSales()">
-            </div>
-            <div id="salesContainer"></div>
+        <table><thead><tr><th>Date</th><th>Category</th><th>Item</th><th>Qty/Unit</th><th>Price (₱)</th><th>Batch</th><th>Action</th></tr></thead><tbody id="expensesTable"></tbody></table>
+      </div>
+      <div id="page-4" class="page">
+        <div class="summary" style="margin-bottom:12px">
+          <div class="s" style="background:#e9fbe9"><div class="muted">Total Paid</div><div id="totalPaid">₱0</div></div>
+          <div class="s" style="background:#fff9e6"><div class="muted">Released</div><div id="totalPending">₱0</div></div>
+          <div class="s" style="background:#fff5f5"><div class="muted">Pending</div><div id="totalUnpaid">₱0</div></div>
+          <div class="s" style="background:#e6f2ff"><div class="muted">Overall</div><div id="overallSales">₱0</div></div>
         </div>
-        <div id="page-5" class="page">
-            <div class="summary" style="margin-bottom:12px">
-                <div class="s blue"><div class="muted">Most Popular Scent</div><div id="topScent">-</div></div>
-                <div class="s blue"><div class="muted">Total Bottles Sold</div><div id="totalBottlesSold">0</div></div>
-                <div class="s blue"><div class="muted">Total Revenue</div><div id="totalRevenueSales">₱0</div></div>
-                <div class="s blue"><div class="muted">Unique Scents Sold</div><div id="uniqueScentCount">0</div></div>
-            </div>
-            <div style="margin-bottom:10px;display:flex;gap:8px">
-                <select id="sellersBatchFilter" onchange="renderBestSellers()"><option value="">All Batches</option></select>
-                <select id="sellersStatusFilter" onchange="renderBestSellers()"><option value="">All Status</option><option>Paid</option><option>Released</option><option>Pending</option></select>
-            </div>
-            <div id="bestSellersContainer"></div>
+        <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <select id="salesBatchFilter" onchange="renderSales()"><option value="">All Batches</option></select>
+          <select id="salesStatusFilter" onchange="renderSales()"><option value="">All Status</option><option>Paid</option><option>Released</option><option>Pending</option></select>
+          <input id="salesFrom" type="date" onchange="renderSales()" style="width:auto">
+          <input id="salesTo" type="date" onchange="renderSales()" style="width:auto">
         </div>
+        <div id="salesContainer"></div>
+      </div>
+      <div id="page-5" class="page">
+        <div class="summary" style="margin-bottom:12px">
+          <div class="s" style="background:#e6f2ff"><div class="muted">Most Popular</div><div id="topScent">-</div></div>
+          <div class="s" style="background:#e6f2ff"><div class="muted">Bottles Sold</div><div id="totalBottlesSold">0</div></div>
+          <div class="s" style="background:#e6f2ff"><div class="muted">Total Revenue</div><div id="totalRevenueSales">₱0</div></div>
+          <div class="s" style="background:#e6f2ff"><div class="muted">Unique Scents</div><div id="uniqueScentCount">0</div></div>
+        </div>
+        <div style="margin-bottom:10px;display:flex;gap:8px">
+          <select id="sellersBatchFilter" onchange="renderBestSellers()"><option value="">All Batches</option></select>
+          <select id="sellersStatusFilter" onchange="renderBestSellers()"><option value="">All Status</option><option>Paid</option><option>Released</option><option>Pending</option></select>
+        </div>
+        <div id="bestSellersContainer"></div>
+      </div>
     </div>
+  </div>
 </div>
 
 <datalist id="scentList"></datalist>
-<div id="modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;padding:20px;z-index:9999">
-    <div id="modalContent" style="background:#fff;padding:18px;border-radius:10px;max-width:720px;width:100%;max-height:90vh;overflow:auto"></div>
+<div id="modal" onclick="if(event.target===this)closeModal()">
+  <div id="modalContent"></div>
 </div>
 
 <script>
-// ============================================================
-// SUPABASE SETUP
-// ============================================================
-let supabase = null;
-let currentUser = null;
-let saveTimer = null;
-let isAuthMode = 'signin'; // 'signin' | 'signup'
+// ════════════════════════════════════════════════════
+// CONFIG & SUPABASE
+// ════════════════════════════════════════════════════
+let _sb = null, _user = null, _saveTimer = null, _authMode = 'signin';
 
-function getConfig() {
-    try { return JSON.parse(localStorage.getItem('sb_config') || '{}'); } catch(e) { return {}; }
-}
-function saveConfig() {
-    const url = document.getElementById('cfgUrl').value.trim();
-    const key = document.getElementById('cfgKey').value.trim();
-    if (!url || !key) { alert('Both fields required'); return; }
-    localStorage.setItem('sb_config', JSON.stringify({ url, key }));
-    closeConfigPanel();
-    initSupabase();
-    showMsg('Supabase configured! Now sign in or create an account.', 'success');
-}
-function openConfigPanel() {
-    const cfg = getConfig();
-    if (cfg.url) document.getElementById('cfgUrl').value = cfg.url;
-    if (cfg.key) document.getElementById('cfgKey').value = cfg.key;
-    const panel = document.getElementById('configPanel');
-    panel.style.display = 'flex';
-}
-function closeConfigPanel() {
-    document.getElementById('configPanel').style.display = 'none';
-}
+function getCfg(){ try{ return JSON.parse(localStorage.getItem('sb_cfg')||'{}'); }catch(e){ return {}; } }
 
-function initSupabase() {
-    const cfg = getConfig();
-    if (!cfg.url || !cfg.key) return false;
-    try {
-        supabase = window.supabase.createClient(cfg.url, cfg.key);
-        // Hide setup instructions once configured
-        document.getElementById('loginSetup').style.display = 'none';
-        return true;
-    } catch(e) {
-        console.error('Supabase init failed:', e);
-        return false;
-    }
+function openCfg(){
+  const c=getCfg();
+  if(c.url) document.getElementById('cfgUrl').value=c.url;
+  if(c.key) document.getElementById('cfgKey').value=c.key;
+  const o=document.getElementById('configOverlay');
+  o.style.cssText='display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:99999;align-items:center;justify-content:center;padding:20px';
+}
+function closeCfg(){ document.getElementById('configOverlay').style.display='none'; }
+function bgCloseCfg(e){ if(e.target===document.getElementById('configOverlay')) closeCfg(); }
+
+function saveAndConnect(){
+  const url=document.getElementById('cfgUrl').value.trim();
+  const key=document.getElementById('cfgKey').value.trim();
+  if(!url||!key){ alert('Both fields are required'); return; }
+  localStorage.setItem('sb_cfg', JSON.stringify({url,key}));
+  closeCfg();
+  if(initSB()){
+    showMsg('✅ Supabase connected! Now sign in or create an account.','success');
+    document.getElementById('setupBox').style.display='none';
+  } else {
+    showMsg('❌ Connection failed — check your URL and key','error');
+  }
 }
 
-function toggleAuthMode() {
-    isAuthMode = isAuthMode === 'signin' ? 'signup' : 'signin';
-    const btn = document.querySelector('.btn-login');
-    const link = document.querySelector('.toggle-link');
-    if (isAuthMode === 'signup') {
-        btn.textContent = 'Create Account';
-        link.innerHTML = 'Already have an account? <span>Sign in</span>';
-    } else {
-        btn.textContent = 'Sign In';
-        link.innerHTML = 'No account? <span>Sign up for free</span>';
-    }
+function initSB(){
+  const c=getCfg();
+  if(!c.url||!c.key) return false;
+  try{
+    _sb = window.supabase.createClient(c.url, c.key);
+    document.getElementById('setupBox').style.display='none';
+    return true;
+  }catch(e){ console.error(e); return false; }
 }
 
-function showMsg(text, type) {
-    const msg = document.getElementById('loginMsg');
-    msg.textContent = text;
-    msg.className = 'msg ' + type;
+function toggleAuthMode(){
+  _authMode = _authMode==='signin'?'signup':'signin';
+  document.getElementById('loginBtn').textContent = _authMode==='signup'?'Create Account':'Sign In';
+  document.getElementById('toggleText').textContent = _authMode==='signup'?'Already have an account? Sign in':'Sign up for free';
 }
 
-async function handleLogin() {
-    if (!supabase) { showMsg('Please configure Supabase first (click ⚙️ Configure Supabase)', 'error'); return; }
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    if (!email || !password) { showMsg('Enter email and password', 'error'); return; }
-
-    showMsg('Please wait...', 'success');
-    let result;
-    if (isAuthMode === 'signup') {
-        result = await supabase.auth.signUp({ email, password });
-    } else {
-        result = await supabase.auth.signInWithPassword({ email, password });
-    }
-
-    if (result.error) {
-        showMsg(result.error.message, 'error');
-    } else {
-        if (isAuthMode === 'signup' && !result.data.session) {
-            showMsg('Check your email to confirm your account, then sign in!', 'success');
-        } else {
-            currentUser = result.data.user;
-            await onLogin();
-        }
-    }
+function showMsg(txt,type){
+  const m=document.getElementById('loginMsg');
+  m.textContent=txt; m.className=type; m.style.display='block';
 }
 
-async function handleLogout() {
-    await forceSave();
-    if (supabase) await supabase.auth.signOut();
-    currentUser = null;
-    document.getElementById('mainApp').style.display = 'none';
-    document.getElementById('loginScreen').style.display = 'flex';
-    setSyncStatus('offline', 'Signed out');
+async function handleLogin(){
+  if(!_sb){ showMsg('Configure Supabase first — click ⚙️ Configure Supabase below','error'); return; }
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPassword').value;
+  if(!email||!pass){ showMsg('Enter email and password','error'); return; }
+  showMsg('Please wait...','success');
+  const r = _authMode==='signup'
+    ? await _sb.auth.signUp({email,password:pass})
+    : await _sb.auth.signInWithPassword({email,password:pass});
+  if(r.error){ showMsg('❌ '+r.error.message,'error'); return; }
+  if(_authMode==='signup'&&!r.data.session){
+    showMsg('✅ Check your email to confirm, then sign in!','success'); return;
+  }
+  _user=r.data.user;
+  await onLogin();
 }
 
-async function onLogin() {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'block';
-    document.getElementById('userEmailDisplay').textContent = currentUser.email;
-    setSyncStatus('saving', 'Loading your data...');
-    await loadFromCloud();
-    renderAll();
-    setSyncStatus('saved', 'All changes saved');
+async function handleLogout(){
+  await forceSave();
+  if(_sb) await _sb.auth.signOut();
+  _user=null;
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  setSS('offline');
 }
 
-// ============================================================
+async function onLogin(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  document.getElementById('userEmail').textContent=_user.email;
+  setSS('saving');
+  await loadCloud();
+  renderAll();
+  setSS('saved');
+}
+
+// ════════════════════════════════════════════════════
 // CLOUD SYNC
-// ============================================================
-function setSyncStatus(state, text) {
-    const el = document.getElementById('syncStatus');
-    el.className = 'sync-status sync-' + state;
-    el.textContent = { saved:'✅ Saved', saving:'⏳ Saving...', error:'❌ Error', offline:'⚫ Offline', unsaved:'🔵 Unsaved changes' }[state] || text;
-    if (text && state !== 'saved') document.getElementById('lastSaved').textContent = text;
+// ════════════════════════════════════════════════════
+function setSS(state){
+  const el=document.getElementById('syncStatus');
+  const map={saved:'✅ Saved',saving:'⏳ Saving...',error:'❌ Error',offline:'⚫ Offline',unsaved:'🔵 Unsaved'};
+  const cls={saved:'ss-saved',saving:'ss-saving',error:'ss-error',offline:'ss-offline',unsaved:'ss-unsaved'};
+  el.textContent=map[state]||state; el.className=cls[state]||'';
 }
 
-async function loadFromCloud() {
-    if (!supabase || !currentUser) return;
-    try {
-        const { data, error } = await supabase
-            .from('perfume_data')
-            .select('data')
-            .eq('user_id', currentUser.id)
-            .single();
-        if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-        if (data) {
-            const parsed = data.data;
-            batches    = parsed.batches    || [];
-            inventory  = parsed.inventory  || [];
-            expenses   = parsed.expenses   || [];
-            bulkOrders = parsed.bulkOrders || [];
-            const saved = data.data.savedAt ? new Date(data.data.savedAt).toLocaleString() : '';
-            document.getElementById('lastSaved').textContent = saved ? `Last saved: ${saved}` : '';
-        }
-    } catch(e) {
-        console.error('Load error:', e);
-        setSyncStatus('error', 'Could not load data');
-        // Fall back to localStorage
-        loadLS();
+async function loadCloud(){
+  if(!_sb||!_user) return;
+  try{
+    const {data,error}=await _sb.from('perfume_data').select('data').eq('user_id',_user.id).single();
+    if(error&&error.code!=='PGRST116') throw error;
+    if(data){
+      const p=data.data;
+      batches=p.batches||[]; inventory=p.inventory||[]; expenses=p.expenses||[]; bulkOrders=p.bulkOrders||[];
+      if(p.savedAt) document.getElementById('lastSaved').textContent='Last saved: '+new Date(p.savedAt).toLocaleString();
     }
+  }catch(e){ console.error(e); setSS('error'); loadLS(); }
 }
 
-async function saveToCloud() {
-    if (!supabase || !currentUser) { saveLS(); return; }
-    setSyncStatus('saving', '');
-    try {
-        const snapshot = getSnapshot();
-        const { error } = await supabase
-            .from('perfume_data')
-            .upsert({ user_id: currentUser.id, data: snapshot, updated_at: new Date().toISOString() },
-                    { onConflict: 'user_id' });
-        if (error) throw error;
-        saveLS(); // also keep local backup
-        setSyncStatus('saved', `Last saved: ${new Date().toLocaleString()}`);
-        document.getElementById('lastSaved').textContent = `Last saved: ${new Date().toLocaleString()}`;
-    } catch(e) {
-        console.error('Save error:', e);
-        setSyncStatus('error', 'Save failed — check connection');
-        saveLS();
-    }
+async function saveCloud(){
+  if(!_sb||!_user){ saveLS(); return; }
+  setSS('saving');
+  try{
+    const snap=getSnap();
+    const {error}=await _sb.from('perfume_data')
+      .upsert({user_id:_user.id,data:snap,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(error) throw error;
+    saveLS();
+    setSS('saved');
+    document.getElementById('lastSaved').textContent='Last saved: '+new Date().toLocaleString();
+  }catch(e){ console.error(e); setSS('error'); saveLS(); }
 }
 
-async function forceSave() { await saveToCloud(); }
+async function forceSave(){ await saveCloud(); }
 
-// Debounced auto-save (saves 2s after last change)
-const saveLS = () => { localStorage.setItem('perfume_tracker_v1', JSON.stringify({batches,inventory,expenses,bulkOrders})); };
-const loadLS = () => {
-    const raw = localStorage.getItem('perfume_tracker_v1');
-    if(!raw) return false;
-    try{ const p=JSON.parse(raw); batches=p.batches||[]; inventory=p.inventory||[]; expenses=p.expenses||[]; bulkOrders=p.bulkOrders||[]; return true; }catch(e){return false;}
-};
-const scheduleSave = async () => {
-    setSyncStatus('unsaved', '');
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => saveToCloud(), 2000);
-};
+function saveLS(){ try{ localStorage.setItem('pft_v1',JSON.stringify({batches,inventory,expenses,bulkOrders})); }catch(e){} }
+function loadLS(){
+  try{
+    const r=localStorage.getItem('pft_v1');
+    if(!r) return;
+    const p=JSON.parse(r);
+    batches=p.batches||[]; inventory=p.inventory||[]; expenses=p.expenses||[]; bulkOrders=p.bulkOrders||[];
+  }catch(e){}
+}
 
-// Override saveLS to also trigger cloud save
-const saveData = async () => { saveLS(); await scheduleSave(); };
+async function saveData(){
+  saveLS(); setSS('unsaved');
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>saveCloud(),2000);
+}
 
-// ============================================================
-// REST OF APP (same logic, using saveData() instead of saveLS())
-// ============================================================
+// ════════════════════════════════════════════════════
+// APP DATA
+// ════════════════════════════════════════════════════
 let batches=[], inventory=[], expenses=[], bulkOrders=[];
-const LOW_THRESHOLD = 100;
-const el = id => document.getElementById(id);
-const uid = ()=> Date.now()+Math.floor(Math.random()*999);
+const $=id=>document.getElementById(id);
+const uid=()=>Date.now()+Math.floor(Math.random()*9999);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+const escA=s=>(s||'').replace(/"/g,'&quot;');
+const san=s=>(s||'').replace(/[^\w\-\s.]/g,'').replace(/\s+/g,'_');
+const getSnap=()=>({batches,inventory,expenses,bulkOrders,savedAt:new Date().toISOString()});
 
-let _pillHideTimer=null, _openPopup=null;
-function _openPill(popup){clearTimeout(_pillHideTimer);if(_openPopup&&_openPopup!==popup)_openPopup.classList.remove('open');popup.classList.add('open');_openPopup=popup;}
-function _schedulePillHide(popup){clearTimeout(_pillHideTimer);_pillHideTimer=setTimeout(()=>{popup.classList.remove('open');if(_openPopup===popup)_openPopup=null;},2000);}
-function attachPillEvents(){document.querySelectorAll('.pill-wrap').forEach(wrap=>{if(wrap._pillBound)return;wrap._pillBound=true;const popup=wrap.querySelector('.pill-popup');if(!popup)return;wrap.addEventListener('mouseenter',()=>_openPill(popup));wrap.addEventListener('mouseleave',()=>_schedulePillHide(popup));popup.addEventListener('mouseenter',()=>{clearTimeout(_pillHideTimer);});popup.addEventListener('mouseleave',()=>_schedulePillHide(popup));});}
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  document.querySelectorAll('.page').forEach((p,j)=>p.classList.toggle('active',j===i));
+  if(i===1)renderBulkOrders(); if(i===2)renderInventory(); if(i===3)renderExpenses();
+  if(i===4)renderSales(); if(i===5)renderBestSellers();
+}
 
-function makePillWrap(scentName,pillCls,statusLabel,batchId,custIdx,scentIdx){const statusText=statusLabel?` <span style="font-size:11px;opacity:0.75;font-weight:500">(${statusLabel})</span>`:'';return `<span class="pill-wrap"><span class="${pillCls}" style="cursor:pointer">${escape(scentName)}${statusText}</span><div class="pill-popup"><button onclick="setBatchScentStatus('${batchId}',${custIdx},${scentIdx},'Paid')"><span class="pp-dot pp-dot-Paid"></span>Paid</button><button onclick="setBatchScentStatus('${batchId}',${custIdx},${scentIdx},'Released')"><span class="pp-dot pp-dot-Released"></span>Released</button><button onclick="setBatchScentStatus('${batchId}',${custIdx},${scentIdx},'Pending')"><span class="pp-dot pp-dot-Pending"></span>Pending</button><button onclick="setBatchScentStatus('${batchId}',${custIdx},${scentIdx},null)" style="color:#888"><span class="pp-dot pp-dot-clear"></span>Clear</button></div></span>`;}
-function makeBulkPillWrap(scentName,statusLabel,orderId,perfumeIdx){const st=statusLabel||'pending';const pillCls='scent-pill '+(st==='sold'?'scent-pill-Paid':st==='added'?'scent-pill-Released':'scent-pill-Pending');const labelText=st.charAt(0).toUpperCase()+st.slice(1);return `<span class="pill-wrap"><span class="${pillCls}" style="cursor:pointer">${escape(scentName)} <span style="font-size:11px;opacity:0.75;font-weight:500">(${labelText})</span></span><div class="pill-popup"><button onclick="setBulkScentStatus('${orderId}',${perfumeIdx},'sold')"><span class="pp-dot pp-dot-Paid"></span>Sold</button><button onclick="setBulkScentStatus('${orderId}',${perfumeIdx},'added')"><span class="pp-dot pp-dot-Released"></span>Added</button><button onclick="setBulkScentStatus('${orderId}',${perfumeIdx},'pending')"><span class="pp-dot pp-dot-Pending"></span>Pending</button></div></span>`;}
+function openModal(html){ $('modalContent').innerHTML=html; $('modal').style.display='flex'; }
+function closeModal(){ $('modal').style.display='none'; $('modalContent').innerHTML=''; }
 
-async function setBatchScentStatus(batchId,custIdx,scentIdx,status){const batch=batches.find(b=>b.id==batchId);if(!batch)return;const cust=batch.customers[custIdx];if(!cust)return;const scent=cust.scents[scentIdx];if(!scent)return;if(status===null)delete scent.status;else scent.status=status;const statuses=cust.scents.map(s=>s.status).filter(Boolean);if(statuses.length===cust.scents.length){const allSame=statuses.every(s=>s===statuses[0]);if(allSame)cust.status=statuses[0];}await saveData();renderBatches();renderSales();}
-async function setBulkScentStatus(orderId,perfumeIdx,status){const order=bulkOrders.find(o=>o.id==orderId);if(!order)return;const perfume=order.perfumes[perfumeIdx];if(!perfume)return;const inv=inventory.find(i=>i.id==perfume.scentId);const ml=parseInt(perfume.size);if(perfume.status==='sold'&&status!=='sold'&&inv)inv.ml+=ml;if(perfume.status!=='sold'&&status==='sold'&&inv){if(inv.ml<ml)alert(`⚠ Not enough ${inv.name}. Available ${inv.ml}ml, needed ${ml}ml — saving anyway.`);inv.ml-=ml;}perfume.status=status;await saveData();renderBulkOrders();renderInventory();}
+function updateBatchFilters(){
+  const opts='<option value="">All Batches</option>'+batches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
+  ['expenseBatchFilter','salesBatchFilter','sellersBatchFilter'].forEach(id=>{ if($(id)) $(id).innerHTML=opts; });
+}
+function updateScentDatalist(){ $('scentList').innerHTML=inventory.map(i=>`<option value="${escA(i.name)}">`).join(''); }
+function renderAll(){ renderBatches();renderBulkOrders();renderInventory();renderExpenses();renderSales();renderBestSellers();updateScentDatalist();updateBatchFilters(); }
 
-function switchTab(i){document.querySelectorAll('.tab').forEach((t,idx)=>t.classList.toggle('active',idx===i));document.querySelectorAll('.page').forEach((p,idx)=>p.classList.toggle('active',idx===i));if(i===1)renderBulkOrders();if(i===2)renderInventory();if(i===3)renderExpenses();if(i===4)renderSales();if(i===5)renderBestSellers();}
-function openModal(html){el('modalContent').innerHTML=html;el('modal').style.display='flex';}
-function closeModal(){el('modal').style.display='none';el('modalContent').innerHTML='';}
+// ── PILL HOVER ──
+let _pHide=null,_pOpen=null;
+function _openP(p){ clearTimeout(_pHide); if(_pOpen&&_pOpen!==p) _pOpen.classList.remove('open'); p.classList.add('open'); _pOpen=p; }
+function _hideP(p){ clearTimeout(_pHide); _pHide=setTimeout(()=>{ p.classList.remove('open'); if(_pOpen===p)_pOpen=null; },2000); }
+function attachPills(){ document.querySelectorAll('.pill-wrap').forEach(w=>{ if(w._b) return; w._b=true; const p=w.querySelector('.pill-popup'); if(!p) return; w.addEventListener('mouseenter',()=>_openP(p)); w.addEventListener('mouseleave',()=>_hideP(p)); p.addEventListener('mouseenter',()=>clearTimeout(_pHide)); p.addEventListener('mouseleave',()=>_hideP(p)); }); }
 
-// BULK ORDER FUNCTIONS
-function openBulkOrderModal(){openModal(`<h3>Create Bulk Order</h3><div style="margin-top:10px"><label>Customer Name</label><input id="bulkCustomerName" placeholder="John Doe"></div><div style="margin-top:10px"><label>Notes (optional)</label><textarea id="bulkNotes" rows="2" placeholder="Special instructions..."></textarea></div><div id="bulkPerfumesContainer" style="margin-top:12px"></div><div style="margin-top:8px;display:flex;gap:8px"><button onclick="addBulkPerfumeRow()">+ Add Perfume</button></div><div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()">Cancel</button><button onclick="saveBulkOrder()" style="background:#2e44ff;color:#fff">Create Order</button></div>`);addBulkPerfumeRow();}
-function addBulkPerfumeRow(name='',size='30ml',price=150,status='pending'){const container=document.getElementById('bulkPerfumesContainer');const row=document.createElement('div');row.className='perfume-item-row perfume-status-'+status;row.innerHTML=`<div style="flex:3"><label>Scent</label><input list="scentList" class="bulk_scent" value="${escapeAttr(name)}"></div><div style="flex:1"><label>Size</label><select class="bulk_size"><option ${size==='30ml'?'selected':''}>30ml</option><option ${size==='50ml'?'selected':''}>50ml</option></select></div><div style="flex:1"><label>Price ₱</label><input type="number" class="bulk_price" min="0" step="0.01" value="${price}"></div><div style="flex:1"><label>Status</label><select class="bulk_status" onchange="updateRowColor(this)"><option value="pending" ${status==='pending'?'selected':''}>Pending</option><option value="sold" ${status==='sold'?'selected':''}>Sold</option><option value="added" ${status==='added'?'selected':''}>Added</option></select></div><div style="width:40px"><label>&nbsp;</label><button onclick="this.closest('.perfume-item-row').remove()" class="small btn-danger">✕</button></div>`;container.appendChild(row);}
-function updateRowColor(selectEl){const row=selectEl.closest('.perfume-item-row');row.className='perfume-item-row perfume-status-'+selectEl.value;}
-async function saveBulkOrder(){const customerName=el('bulkCustomerName').value.trim();const notes=el('bulkNotes').value.trim();if(!customerName){alert('Customer name required');return;}const rows=Array.from(document.querySelectorAll('#bulkPerfumesContainer .perfume-item-row'));if(rows.length===0){alert('Add at least one perfume');return;}const perfumes=[];for(const r of rows){const sName=r.querySelector('.bulk_scent').value.trim();const size=r.querySelector('.bulk_size').value;const price=parseFloat(r.querySelector('.bulk_price').value);const status=r.querySelector('.bulk_status').value;if(!sName||!price){alert('Fill all perfume fields');return;}const inv=inventory.find(i=>i.name===sName);if(!inv){alert(`Scent "${sName}" not in inventory. Add it first.`);return;}perfumes.push({id:uid(),scentId:inv.id,name:inv.name,size,price,status});}for(const p of perfumes){if(p.status==='sold'){const inv=inventory.find(i=>i.id===p.scentId);const mlNeeded=parseInt(p.size);if(inv.ml<mlNeeded)alert(`⚠ Warning: Not enough ${inv.name}. Available ${inv.ml}ml, needed ${mlNeeded}ml — will still save.`);inv.ml-=mlNeeded;}}bulkOrders.push({id:uid(),customerName,notes,perfumes,createdAt:new Date().toISOString()});await saveData();closeModal();renderBulkOrders();renderInventory();}
-function toggleBulkSoldSection(orderId){const container=document.getElementById('bulk-sold-'+orderId);const btn=document.getElementById('bulk-sold-btn-'+orderId);if(!container)return;const isOpen=container.classList.toggle('open');const soldCount=container.querySelectorAll('.perfume-item-row').length;btn.innerHTML=isOpen?`✅ Sold Items (${soldCount}) ▲ Hide`:`✅ Sold Items (${soldCount}) ▼ Show`;}
+function pillWrap(name,cls,label,bId,ci,si){
+  const lt=label?` <span style="font-size:11px;opacity:0.75">(${label})</span>`:'';
+  return `<span class="pill-wrap"><span class="${cls}">${esc(name)}${lt}</span><div class="pill-popup">
+    <button onclick="setScentSt('${bId}',${ci},${si},'Paid')"><span class="pp-dot pp-dot-Paid"></span>Paid</button>
+    <button onclick="setScentSt('${bId}',${ci},${si},'Released')"><span class="pp-dot pp-dot-Released"></span>Released</button>
+    <button onclick="setScentSt('${bId}',${ci},${si},'Pending')"><span class="pp-dot pp-dot-Pending"></span>Pending</button>
+    <button onclick="setScentSt('${bId}',${ci},${si},null)" style="color:#888"><span class="pp-dot pp-dot-clear"></span>Clear</button>
+  </div></span>`;
+}
+function bulkPillWrap(name,status,oid,pi){
+  const st=status||'pending';
+  const cls='scent-pill '+(st==='sold'?'scent-pill-Paid':st==='added'?'scent-pill-Released':'scent-pill-Pending');
+  const lt=st.charAt(0).toUpperCase()+st.slice(1);
+  return `<span class="pill-wrap"><span class="${cls}">${esc(name)} <span style="font-size:11px;opacity:0.75">(${lt})</span></span><div class="pill-popup">
+    <button onclick="setBulkSt('${oid}',${pi},'sold')"><span class="pp-dot pp-dot-Paid"></span>Sold</button>
+    <button onclick="setBulkSt('${oid}',${pi},'added')"><span class="pp-dot pp-dot-Released"></span>Added</button>
+    <button onclick="setBulkSt('${oid}',${pi},'pending')"><span class="pp-dot pp-dot-Pending"></span>Pending</button>
+  </div></span>`;
+}
+function pillCls(s){ if(s.status==='Paid') return 'scent-pill scent-pill-Paid'; if(s.status==='Released') return 'scent-pill scent-pill-Released'; if(s.status==='Pending') return 'scent-pill scent-pill-Pending'; return 'scent-pill'; }
 
-function renderBulkOrders(){const container=document.getElementById('bulkOrdersContainer');if(bulkOrders.length===0){container.innerHTML=`<div class="card">No bulk orders yet.</div>`;return;}const sorted=[...bulkOrders].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));container.innerHTML=sorted.map(order=>{const totalAmount=order.perfumes.reduce((sum,p)=>sum+p.price,0);const soldCount=order.perfumes.filter(p=>p.status==='sold').length;const addedCount=order.perfumes.filter(p=>p.status==='added').length;const pendingCount=order.perfumes.filter(p=>p.status==='pending').length;const nonSoldPerfumes=order.perfumes.map((p,pi)=>({...p,_origIdx:pi})).filter(p=>p.status!=='sold');const soldPerfumes=order.perfumes.map((p,pi)=>({...p,_origIdx:pi})).filter(p=>p.status==='sold');const renderPerfumeRow=(p,pi)=>`<div class="perfume-item-row perfume-status-${p.status}" style="margin-bottom:6px"><div style="flex:1">${makeBulkPillWrap(p.name,p.status,order.id,pi)}</div><div style="flex:1;text-align:center">${p.size}</div><div style="flex:1;text-align:center">₱${p.price.toFixed(2)}</div><div style="flex:1;text-align:center"><span class="status-badge status-${p.status==='sold'?'Paid':p.status==='added'?'Released':'Pending'}">${p.status.toUpperCase()}</span></div></div>`;const nonSoldHtml=nonSoldPerfumes.map(p=>renderPerfumeRow(p,p._origIdx)).join('');const soldHtml=soldPerfumes.map(p=>renderPerfumeRow(p,p._origIdx)).join('');const soldToggle=soldCount>0?`<button class="sold-toggle-btn" id="bulk-sold-btn-${order.id}" onclick="toggleBulkSoldSection('${order.id}')">✅ Sold Items (${soldCount}) ▼ Show</button><div class="sold-items-container" id="bulk-sold-${order.id}">${soldHtml}</div>`:'';return `<div style="border:3px solid #667eea;background:#fff;padding:18px;border-radius:12px;margin-bottom:16px;box-shadow:0 4px 12px rgba(102,126,234,0.15)"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px"><div><div style="font-weight:800;font-size:18px">${escape(order.customerName)}</div><div class="muted">Created: ${new Date(order.createdAt).toLocaleString()}</div>${order.notes?`<div class="muted" style="margin-top:4px;font-style:italic">${escape(order.notes)}</div>`:''}</div><div class="actions"><button onclick="openEditBulkOrder('${order.id}')" class="small">Edit</button><button onclick="deleteBulkOrder('${order.id}')" class="small btn-danger">Delete</button></div></div><div style="display:flex;gap:12px;margin-bottom:12px"><div class="card" style="flex:1;background:#e9fbe9"><div class="muted">Sold</div><div style="font-weight:800;color:#198754">${soldCount}</div></div><div class="card" style="flex:1;background:#fff9e6"><div class="muted">Added</div><div style="font-weight:800;color:#ff8800">${addedCount}</div></div><div class="card" style="flex:1;background:#fff5f5"><div class="muted">Pending</div><div style="font-weight:800;color:#dc3545">${pendingCount}</div></div><div class="card" style="flex:1;background:#e6f2ff"><div class="muted">Total Amount</div><div style="font-weight:800;color:#667eea">₱${totalAmount.toFixed(2)}</div></div></div><div style="background:#f8f9fa;border-radius:10px;padding:12px">${nonSoldHtml||(soldCount>0?'<div class="muted" style="padding:4px 0">All items have been sold.</div>':'<div class="muted">No items.</div>')}${soldToggle}</div></div>`;}).join('');requestAnimationFrame(attachPillEvents);}
+async function setScentSt(bId,ci,si,st){
+  const b=batches.find(x=>x.id==bId); if(!b) return;
+  const c=b.customers[ci]; if(!c) return;
+  const s=c.scents[si]; if(!s) return;
+  if(st===null) delete s.status; else s.status=st;
+  const sts=c.scents.map(x=>x.status).filter(Boolean);
+  if(sts.length===c.scents.length&&sts.every(x=>x===sts[0])) c.status=sts[0];
+  await saveData(); renderBatches(); renderSales();
+}
+async function setBulkSt(oid,pi,st){
+  const o=bulkOrders.find(x=>x.id==oid); if(!o) return;
+  const p=o.perfumes[pi]; if(!p) return;
+  const inv=inventory.find(i=>i.id==p.scentId);
+  const ml=parseInt(p.size);
+  if(p.status==='sold'&&st!=='sold'&&inv) inv.ml+=ml;
+  if(p.status!=='sold'&&st==='sold'&&inv){ if(inv.ml<ml) alert(`⚠ Low stock: ${inv.name}`); inv.ml-=ml; }
+  p.status=st; await saveData(); renderBulkOrders(); renderInventory();
+}
 
-let editingBulkOrder={orderId:null,originalPerfumes:[]};
-function openEditBulkOrder(orderId){const order=bulkOrders.find(o=>o.id==orderId);if(!order)return;editingBulkOrder.orderId=orderId;editingBulkOrder.originalPerfumes=JSON.parse(JSON.stringify(order.perfumes));openModal(`<h3>Edit Bulk Order</h3><div style="margin-top:10px"><label>Customer Name</label><input id="editBulkCustomerName" value="${escapeAttr(order.customerName)}"></div><div style="margin-top:10px"><label>Notes (optional)</label><textarea id="editBulkNotes" rows="2">${escapeAttr(order.notes)}</textarea></div><div id="editBulkPerfumesContainer" style="margin-top:12px"></div><div style="margin-top:8px;display:flex;gap:8px"><button onclick="addEditBulkPerfumeRow()">+ Add Perfume</button></div><div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()">Cancel</button><button onclick="saveEditedBulkOrder()" style="background:#2e44ff;color:#fff">Update Order</button></div>`);order.perfumes.forEach(p=>{addEditBulkPerfumeRow(p.name,p.size,p.price,p.status);});}
-function addEditBulkPerfumeRow(name='',size='30ml',price=150,status='pending'){const container=document.getElementById('editBulkPerfumesContainer');const row=document.createElement('div');row.className='perfume-item-row perfume-status-'+status;row.innerHTML=`<div style="flex:3"><label>Scent</label><input list="scentList" class="edit_bulk_scent" value="${escapeAttr(name)}"></div><div style="flex:1"><label>Size</label><select class="edit_bulk_size"><option ${size==='30ml'?'selected':''}>30ml</option><option ${size==='50ml'?'selected':''}>50ml</option></select></div><div style="flex:1"><label>Price ₱</label><input type="number" class="edit_bulk_price" min="0" step="0.01" value="${price}"></div><div style="flex:1"><label>Status</label><select class="edit_bulk_status" onchange="updateRowColor(this)"><option value="pending" ${status==='pending'?'selected':''}>Pending</option><option value="sold" ${status==='sold'?'selected':''}>Sold</option><option value="added" ${status==='added'?'selected':''}>Added</option></select></div><div style="width:40px"><label>&nbsp;</label><button onclick="this.closest('.perfume-item-row').remove()" class="small btn-danger">✕</button></div>`;container.appendChild(row);}
-async function saveEditedBulkOrder(){const customerName=el('editBulkCustomerName').value.trim();const notes=el('editBulkNotes').value.trim();if(!customerName){alert('Customer name required');return;}const rows=Array.from(document.querySelectorAll('#editBulkPerfumesContainer .perfume-item-row'));if(rows.length===0){alert('Add at least one perfume');return;}editingBulkOrder.originalPerfumes.forEach(p=>{if(p.status==='sold'){const inv=inventory.find(i=>i.id==p.scentId);if(inv)inv.ml+=parseInt(p.size);}});const newPerfumes=[];for(const r of rows){const sName=r.querySelector('.edit_bulk_scent').value.trim();const size=r.querySelector('.edit_bulk_size').value;const price=parseFloat(r.querySelector('.edit_bulk_price').value);const status=r.querySelector('.edit_bulk_status').value;if(!sName||!price){alert('Fill all perfume fields');editingBulkOrder.originalPerfumes.forEach(p=>{if(p.status==='sold'){const inv=inventory.find(i=>i.id==p.scentId);if(inv)inv.ml-=parseInt(p.size);}});return;}const inv=inventory.find(i=>i.name===sName);if(!inv){alert(`Scent "${sName}" not in inventory`);editingBulkOrder.originalPerfumes.forEach(p=>{if(p.status==='sold'){const inv2=inventory.find(i=>i.id==p.scentId);if(inv2)inv2.ml-=parseInt(p.size);}});return;}newPerfumes.push({id:uid(),scentId:inv.id,name:inv.name,size,price,status});}for(const p of newPerfumes){if(p.status==='sold'){const inv=inventory.find(i=>i.id===p.scentId);const mlNeeded=parseInt(p.size);if(inv.ml<mlNeeded)alert(`⚠ Warning: Not enough ${inv.name}. Available ${inv.ml}ml, needed ${mlNeeded}ml — will still save.`);inv.ml-=mlNeeded;}}const order=bulkOrders.find(o=>o.id==editingBulkOrder.orderId);order.customerName=customerName;order.notes=notes;order.perfumes=newPerfumes;await saveData();closeModal();renderBulkOrders();renderInventory();}
-async function deleteBulkOrder(orderId){if(!confirm('Delete this bulk order?'))return;const order=bulkOrders.find(o=>o.id==orderId);order.perfumes.forEach(p=>{if(p.status==='sold'){const inv=inventory.find(i=>i.id==p.scentId);if(inv)inv.ml+=parseInt(p.size);}});bulkOrders=bulkOrders.filter(o=>o.id!=orderId);await saveData();renderBulkOrders();renderInventory();}
+// ── BATCHES ──
+function openNewBatchModal(){ openModal(`<h3>Create New Batch</h3><div style="margin-top:10px"><label>Batch name</label><input id="nb_name" placeholder="Batch #1 - October"></div><div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()" style="background:#6c757d">Cancel</button><button onclick="createBatch()">Create</button></div>`); }
+async function createBatch(){
+  const n=$('nb_name').value.trim(); if(!n){ alert('Enter a name'); return; }
+  batches.push({id:uid(),name:n,customers:[],createdAt:new Date().toISOString()});
+  batches.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  await saveData(); closeModal(); renderBatches(); updateBatchFilters();
+}
 
-// BATCH FUNCTIONS
-function openNewBatchModal(){openModal(`<h3>Create New Batch</h3><div style="margin-top:10px"><label>Batch name</label><input id="newBatchName" placeholder="Batch #15 - October 2025"></div><div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()">Cancel</button><button onclick="createBatch()" style="background:#2e44ff;color:#fff">Create</button></div>`);}
-async function createBatch(){const name=el('newBatchName').value.trim();if(!name){alert('Enter batch name');return;}batches.push({id:uid(),name,customers:[],createdAt:new Date().toISOString()});sortBatches();await saveData();closeModal();renderBatches();updateBatchFilters();}
-function sortBatches(){batches.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));}
-function pillClass(scent){if(scent.status==='Paid')return 'scent-pill scent-pill-Paid';if(scent.status==='Released')return 'scent-pill scent-pill-Released';if(scent.status==='Pending')return 'scent-pill scent-pill-Pending';return 'scent-pill';}
-function sortCustomersByStatus(customers){const order={'Pending':0,'Released':1,'Paid':2};return[...customers].sort((a,b)=>{const ao=order[a.status]??0;const bo=order[b.status]??0;return ao-bo;});}
+function renderBatches(){
+  const c=$('batchesContainer');
+  if(!batches.length){ c.innerHTML='<div class="card">No batches yet. Create one above.</div>'; return; }
+  batches.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const sortCust=cs=>{const o={Pending:0,Released:1,Paid:2};return[...cs].sort((a,b)=>(o[a.status]??0)-(o[b.status]??0));};
+  c.innerHTML=batches.map(batch=>{
+    const tot=batch.customers.reduce((a,c)=>a+c.scents.reduce((s,it)=>s+(it.price*it.quantity),0),0);
+    const sc=sortCust(batch.customers);
+    return `<div style="border:3px solid #667eea;background:#fff;padding:18px;border-radius:12px;margin-bottom:16px;box-shadow:0 4px 12px rgba(102,126,234,0.15)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><div style="font-weight:800">${esc(batch.name)}</div><div class="muted">Created: ${new Date(batch.createdAt).toLocaleString()}</div></div>
+        <div class="actions">
+          <button onclick="openAddCust(${batch.id})" class="small">+ Customer</button>
+          <button onclick="exportBatch(${batch.id})" class="small btn-secondary">Export</button>
+          <button onclick="delBatch(${batch.id})" class="small btn-danger">Delete</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+        <div class="card" style="flex:1;min-width:80px"><div class="muted">Customers</div><div style="font-weight:800">${batch.customers.length}</div></div>
+        <div class="card" style="flex:1;min-width:80px"><div class="muted">Bottles</div><div style="font-weight:800">${batch.customers.reduce((s,c)=>s+c.scents.reduce((a,sc)=>a+sc.quantity,0),0)}</div></div>
+        <div class="card" style="flex:1;min-width:80px"><div class="muted">Total ₱</div><div style="font-weight:800">₱${tot.toFixed(2)}</div></div>
+      </div>
+      <div style="margin-top:12px">
+      ${sc.length?`<div style="background:#f8f9fa;border-radius:10px;padding:12px;overflow-x:auto">
+        <table style="margin:0;min-width:500px"><thead><tr style="border-bottom:2px solid #dee2e6">
+          <th style="padding:10px 12px">Customer</th><th style="padding:10px 12px">Scents</th>
+          <th style="padding:10px 12px">Amount</th><th style="padding:10px 12px">Status</th><th style="padding:10px 12px">Action</th>
+        </tr></thead><tbody>
+        ${sc.map(cust=>{
+          const oi=batch.customers.indexOf(cust);
+          const amt=cust.scents.reduce((s,it)=>s+(it.price*it.quantity),0);
+          const rs=cust.status==='Paid'?'background:#f6fff8;opacity:0.85':'background:#fff';
+          return `<tr style="border:2px solid #ced4da;border-radius:8px;${rs}">
+            <td style="padding:12px;border-bottom:none"><strong>${esc(cust.name)}</strong>${cust.status==='Paid'?'<span style="font-size:11px;background:#c8f7d4;color:#0b4f1a;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:6px">✓ PAID</span>':''}</td>
+            <td style="padding:12px;border-bottom:none">${cust.scents.map((s,si)=>pillWrap(`${s.name}, ${s.size} (${s.quantity})`,pillCls(s),s.status||'',batch.id,oi,si)).join('')}</td>
+            <td style="padding:12px;border-bottom:none"><strong>₱${amt.toFixed(2)}</strong></td>
+            <td style="padding:12px;border-bottom:none">
+              <select onchange="updateSt('${batch.id}',${oi},this.value)" class="status-badge status-${cust.status}" style="border:none;font-weight:700;cursor:pointer;width:auto">
+                <option ${cust.status==='Pending'?'selected':''}>Pending</option>
+                <option ${cust.status==='Released'?'selected':''}>Released</option>
+                <option ${cust.status==='Paid'?'selected':''}>Paid</option>
+              </select>
+            </td>
+            <td style="padding:12px;border-bottom:none">
+              <button onclick="openEditOrder('${batch.id}',${oi})" class="small" style="background:#3498db;margin-right:4px">Edit</button>
+              <button onclick="delOrder('${batch.id}',${oi})" class="small btn-danger">Delete</button>
+            </td>
+          </tr><tr style="height:6px"><td colspan="5" style="border:none;padding:0"></td></tr>`;
+        }).join('')}
+        </tbody></table></div>`:'<div class="muted" style="padding:10px">No customers yet.</div>'}
+      </div>
+    </div>`;
+  }).join('');
+  requestAnimationFrame(attachPills);
+}
 
-function renderBatches(){const container=document.getElementById('batchesContainer');if(batches.length===0){container.innerHTML=`<div class="card">No batches yet. Create one.</div>`;return;}sortBatches();container.innerHTML=batches.map(batch=>{const totalSales=batch.customers.reduce((acc,c)=>acc+c.scents.reduce((s,it)=>s+(it.price*it.quantity),0),0);const sortedCustomers=sortCustomersByStatus(batch.customers);return `<div style="border:3px solid #667eea;background:#fff;padding:18px;border-radius:12px;margin-bottom:16px;box-shadow:0 4px 12px rgba(102,126,234,0.15)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:800">${escape(batch.name)}</div><div class="muted" style="font-size:13px">Created: ${new Date(batch.createdAt).toLocaleString()}</div></div><div class="actions"><button onclick="openAddCustomer(${batch.id})" class="small">+ Customer</button><button onclick="exportBatch(${batch.id})" class="small btn-secondary">Export</button><button onclick="deleteBatch(${batch.id})" class="small btn-danger">Delete</button></div></div><div style="display:flex;gap:12px;margin-top:10px"><div class="card" style="flex:1"><div class="muted">Customers</div><div style="font-weight:800">${batch.customers.length}</div></div><div class="card" style="flex:1"><div class="muted">Bottles Ordered</div><div style="font-weight:800">${batch.customers.reduce((sum,c)=>sum+c.scents.reduce((s,sc)=>s+sc.quantity,0),0)}</div></div><div class="card" style="flex:1"><div class="muted">Total ₱</div><div style="font-weight:800">₱${totalSales.toFixed(2)}</div></div></div><div style="margin-top:12px">${sortedCustomers.length?`<div style="background:#f8f9fa;border-radius:10px;padding:12px"><table style="margin:0"><thead><tr style="border-bottom:2px solid #dee2e6"><th style="padding:10px 12px;font-weight:700;color:#495057">Customer</th><th style="padding:10px 12px;font-weight:700;color:#495057">Scents</th><th style="padding:10px 12px;font-weight:700;color:#495057">Amount (₱)</th><th style="padding:10px 12px;font-weight:700;color:#495057">Status</th><th style="padding:10px 12px;font-weight:700;color:#495057">Action</th></tr></thead><tbody>${sortedCustomers.map((cust)=>{const origIdx=batch.customers.indexOf(cust);const amt=cust.scents.reduce((s,it)=>s+(it.price*it.quantity),0);const rowStyle=cust.status==='Paid'?'border:2px solid #ced4da;border-radius:8px;background:#f6fff8;box-shadow:0 2px 4px rgba(0,0,0,0.05);opacity:0.82':'border:2px solid #ced4da;border-radius:8px;background:#ffffff;box-shadow:0 2px 4px rgba(0,0,0,0.05)';return `<tr style="${rowStyle}"><td style="padding:14px 12px;border-bottom:none;border-top-left-radius:8px;border-bottom-left-radius:8px"><strong style="font-size:15px;color:#2c3e50">${escape(cust.name)}</strong>${cust.status==='Paid'?'<span style="font-size:11px;background:#c8f7d4;color:#0b4f1a;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:6px">✓ PAID</span>':''}</td><td style="padding:14px 12px;border-bottom:none">${cust.scents.map((s,si)=>makePillWrap(`${s.name}, ${s.size} (${s.quantity})`,pillClass(s),s.status||'',batch.id,origIdx,si)).join('')}</td><td style="padding:14px 12px;border-bottom:none"><strong style="font-size:15px;color:#2c3e50">₱${amt.toFixed(2)}</strong></td><td style="padding:14px 12px;border-bottom:none"><select onchange="updateStatus('${batch.id}',${origIdx},this.value)" class="status-badge status-${cust.status}" style="border:none;font-weight:700;cursor:pointer"><option ${cust.status==='Pending'?'selected':''}>Pending</option><option ${cust.status==='Released'?'selected':''}>Released</option><option ${cust.status==='Paid'?'selected':''}>Paid</option></select></td><td style="padding:14px 12px;border-bottom:none;border-top-right-radius:8px;border-bottom-right-radius:8px"><button onclick="openEditOrder('${batch.id}',${origIdx})" class="small" style="background:#3498db;margin-right:4px">Edit</button><button onclick="deleteOrder('${batch.id}',${origIdx})" class="small btn-danger">Delete</button></td></tr><tr style="height:8px"><td colspan="5" style="border:none;padding:0"></td></tr>`;}).join('')}</tbody></table></div>`:`<div class="muted" style="padding:10px">No customers</div>`}</div></div>`;}).join('');requestAnimationFrame(attachPillEvents);}
+function openAddCust(bId){ openModal(`<h3>Add Customer</h3><div style="margin-top:8px"><label>Customer Name</label><input id="c_name"></div><div id="c_scents" style="margin-top:8px"></div><div style="margin-top:8px"><button onclick="addCSRow()">+ Add Scent</button></div><div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()" style="background:#6c757d">Cancel</button><button onclick="saveCust('${bId}')">Save</button></div>`); addCSRow(); }
+function addCSRow(n='',q=1,sz='30ml',p=150){
+  const c=$('c_scents'); const r=document.createElement('div'); r.className='card'; r.style.marginBottom='8px';
+  r.innerHTML=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="flex:3;min-width:120px"><label>Scent</label><input list="scentList" class="cs_n" value="${escA(n)}"></div>
+    <div style="flex:1;min-width:60px"><label>Qty</label><input type="number" class="cs_q" min="1" value="${q}"></div>
+    <div style="flex:1;min-width:60px"><label>Size</label><select class="cs_s"><option>30ml</option><option>50ml</option></select></div>
+    <div style="flex:1;min-width:60px"><label>Price ₱</label><input type="number" class="cs_p" min="0" step="0.01" value="${p}"></div>
+    <div style="width:36px"><label>&nbsp;</label><button onclick="this.closest('.card').remove()" class="small btn-danger">✕</button></div>
+  </div>`; c.appendChild(r); r.querySelector('.cs_s').value=sz;
+}
+async function saveCust(bId){
+  const n=$('c_name').value.trim(); if(!n){ alert('Name required'); return; }
+  const rows=Array.from(document.querySelectorAll('#c_scents .card')); if(!rows.length){ alert('Add a scent'); return; }
+  const scents=[];
+  for(const r of rows){
+    const sn=r.querySelector('.cs_n').value.trim(), q=parseInt(r.querySelector('.cs_q').value), sz=r.querySelector('.cs_s').value, p=parseFloat(r.querySelector('.cs_p').value);
+    if(!sn||!q||!p){ alert('Fill all scent fields'); return; }
+    const inv=inventory.find(i=>i.name===sn); if(!inv){ alert(`"${sn}" not in inventory`); return; }
+    if(inv.ml<parseInt(sz)*q) alert(`⚠ Low stock: ${inv.name}`);
+    scents.push({id:inv.id,name:inv.name,quantity:q,size:sz,price:p});
+  }
+  for(const s of scents){ const inv=inventory.find(i=>i.id===s.id); inv.ml-=parseInt(s.size)*s.quantity; }
+  const b=batches.find(x=>x.id==bId); b.customers.push({name:n,scents,status:'Pending'});
+  await saveData(); closeModal(); renderBatches(); renderInventory(); renderSales(); renderBestSellers();
+}
 
-function openAddCustomer(batchId){openModal(`<h3>Add Customer (Batch)</h3><div style="margin-top:8px"><label>Customer Name</label><input id="custName"></div><div id="custScentsContainer" style="margin-top:8px"></div><div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-start"><button onclick="addCustScentRow()">+ Add Scent</button></div><div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()">Cancel</button><button onclick="saveCustomer('${batchId}')" style="background:#2e44ff;color:#fff">Save</button></div>`);addCustScentRow();}
-function addCustScentRow(name='',quantity=1,size='30ml',price=150){const container=document.getElementById('custScentsContainer');const row=document.createElement('div');row.className='card';row.style.marginBottom='8px';row.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><div style="flex:3"><label>Scent</label><input list="scentList" class="c_scent" value="${escapeAttr(name)}"></div><div style="flex:1"><label>Qty</label><input type="number" class="c_qty" min="1" value="${quantity}"></div><div style="flex:1"><label>Size</label><select class="c_size"><option>30ml</option><option>50ml</option></select></div><div style="flex:1"><label>Price ₱</label><input type="number" class="c_price" min="0" step="0.01" value="${price}"></div><div style="width:40px"><label>&nbsp;</label><button onclick="this.closest('.card').remove()" class="small btn-danger">✕</button></div></div>`;container.appendChild(row);row.querySelector('.c_size').value=size;}
-async function saveCustomer(batchId){const name=el('custName').value.trim();if(!name){alert('Customer name required');return;}const rows=Array.from(document.querySelectorAll('#custScentsContainer .card'));if(rows.length===0){alert('Add at least one scent');return;}const scents=[];for(const r of rows){const sName=r.querySelector('.c_scent').value.trim();const qty=parseInt(r.querySelector('.c_qty').value);const size=r.querySelector('.c_size').value;const price=parseFloat(r.querySelector('.c_price').value);if(!sName||!qty||!price){alert('Fill scent rows properly');return;}const inv=inventory.find(i=>i.name===sName);if(!inv){alert(`Scent "${sName}" not in inventory. Add it first.`);return;}const mlNeeded=parseInt(size)*qty;if(inv.ml<mlNeeded)alert(`⚠ Warning: Not enough ${inv.name}. Available ${inv.ml}ml, needed ${mlNeeded}ml — will still save.`);scents.push({id:inv.id,name:inv.name,quantity:qty,size,price});}for(const s of scents){const inv=inventory.find(i=>i.id===s.id);inv.ml-=parseInt(s.size)*s.quantity;}const batch=batches.find(b=>b.id==batchId);if(!batch){alert('Batch not found');closeModal();return;}batch.customers.push({name,scents,status:'Pending'});sortBatches();await saveData();closeModal();renderBatches();renderInventory();renderSales();renderBestSellers();}
+let _ed={bId:null,idx:null,orig:[]};
+function openEditOrder(bId,idx){
+  const b=batches.find(x=>x.id==bId); if(!b) return;
+  const cu=b.customers[idx]; _ed={bId,idx,orig:JSON.parse(JSON.stringify(cu.scents))};
+  openModal(`<h3>Edit Order</h3><div><label>Customer</label><input id="eo_name" value="${escA(cu.name)}"></div><div id="eo_scents" style="margin-top:8px"></div><div style="margin-top:8px"><button onclick="addEORow()">+ Add Scent</button></div><div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()" style="background:#6c757d">Cancel</button><button onclick="saveEditOrder()">Update</button></div>`);
+  cu.scents.forEach(s=>{ const r=document.createElement('div'); r.className='card'; r.style.marginBottom='8px'; r.innerHTML=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div style="flex:3;min-width:120px"><label>Scent</label><input list="scentList" class="eo_n" value="${escA(s.name)}"></div><div style="flex:1;min-width:60px"><label>Qty</label><input type="number" class="eo_q" min="1" value="${s.quantity}"></div><div style="flex:1;min-width:60px"><label>Size</label><select class="eo_s"><option>30ml</option><option>50ml</option></select></div><div style="flex:1;min-width:60px"><label>Price ₱</label><input type="number" class="eo_p" min="0" step="0.01" value="${s.price}"></div><div style="width:36px"><label>&nbsp;</label><button onclick="this.closest('.card').remove()" class="small btn-danger">✕</button></div></div>`; $('eo_scents').appendChild(r); r.querySelector('.eo_s').value=s.size; }); }
+function addEORow(){ const r=document.createElement('div'); r.className='card'; r.style.marginBottom='8px'; r.innerHTML=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div style="flex:3;min-width:120px"><label>Scent</label><input list="scentList" class="eo_n"></div><div style="flex:1;min-width:60px"><label>Qty</label><input type="number" class="eo_q" min="1" value="1"></div><div style="flex:1;min-width:60px"><label>Size</label><select class="eo_s"><option>30ml</option><option>50ml</option></select></div><div style="flex:1;min-width:60px"><label>Price ₱</label><input type="number" class="eo_p" min="0" step="0.01" value="150"></div><div style="width:36px"><label>&nbsp;</label><button onclick="this.closest('.card').remove()" class="small btn-danger">✕</button></div></div>`; $('eo_scents').appendChild(r); }
+async function saveEditOrder(){
+  const n=$('eo_name').value.trim(); if(!n){ alert('Name required'); return; }
+  const rows=Array.from(document.querySelectorAll('#eo_scents .card')); if(!rows.length){ alert('Add a scent'); return; }
+  _ed.orig.forEach(s=>{ const inv=inventory.find(i=>i.id==s.id); if(inv) inv.ml+=parseInt(s.size)*s.quantity; });
+  const ns=[];
+  for(const r of rows){
+    const sn=r.querySelector('.eo_n').value.trim(), q=parseInt(r.querySelector('.eo_q').value), sz=r.querySelector('.eo_s').value, p=parseFloat(r.querySelector('.eo_p').value);
+    if(!sn||!q||!p){ alert('Fill all fields'); _ed.orig.forEach(s=>{ const inv=inventory.find(i=>i.id==s.id); if(inv) inv.ml-=parseInt(s.size)*s.quantity; }); return; }
+    const inv=inventory.find(i=>i.name===sn); if(!inv){ alert(`"${sn}" not found`); _ed.orig.forEach(s=>{ const inv2=inventory.find(i=>i.id==s.id); if(inv2) inv2.ml-=parseInt(s.size)*s.quantity; }); return; }
+    const os=_ed.orig.find(x=>x.id==inv.id);
+    ns.push({id:inv.id,name:inv.name,quantity:q,size:sz,price:p,status:os?os.status:undefined});
+  }
+  for(const s of ns){ const inv=inventory.find(i=>i.id==s.id); inv.ml-=parseInt(s.size)*s.quantity; }
+  const b=batches.find(x=>x.id==_ed.bId);
+  b.customers[_ed.idx]={name:n,scents:ns,status:b.customers[_ed.idx].status};
+  await saveData(); closeModal(); renderBatches(); renderInventory(); renderSales(); renderBestSellers();
+}
+async function delOrder(bId,idx){
+  if(!confirm('Delete this order?')) return;
+  const b=batches.find(x=>x.id==bId);
+  b.customers[idx].scents.forEach(s=>{ const inv=inventory.find(i=>i.id==s.id); if(inv) inv.ml+=parseInt(s.size)*s.quantity; });
+  b.customers.splice(idx,1); await saveData(); renderBatches(); renderInventory(); renderSales(); renderBestSellers();
+}
+async function updateSt(bId,idx,st){
+  const b=batches.find(x=>x.id==bId); b.customers[idx].status=st;
+  await saveData(); renderBatches(); renderSales(); renderBestSellers();
+}
+async function delBatch(bId){
+  if(!confirm('Delete batch and return all ML?')) return;
+  const b=batches.find(x=>x.id==bId);
+  b.customers.forEach(c=>c.scents.forEach(s=>{ const inv=inventory.find(i=>i.id==s.id); if(inv) inv.ml+=parseInt(s.size)*s.quantity; }));
+  batches=batches.filter(x=>x.id!=bId); await saveData(); renderBatches(); renderInventory(); renderSales(); renderBestSellers(); updateBatchFilters();
+}
+function exportBatch(bId){ const b=batches.find(x=>x.id==bId); const blob=new Blob([JSON.stringify({batch:b,inventory,expenses,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=san(b.name)+'.json'; a.click(); }
 
-let editing={batchId:null,idx:null,originalScents:[]};
-function openEditOrder(batchId,idx){const batch=batches.find(b=>b.id==batchId);if(!batch)return;const cust=batch.customers[idx];openModal(`<h3>Edit Order</h3><div><label>Customer</label><input id="editCustName" value="${escapeAttr(cust.name)}"></div><div id="editScents"></div><div style="margin-top:8px"><button onclick="addEditScentRow()">+ Add Scent</button></div><div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()">Cancel</button><button onclick="saveEditedOrder()" style="background:#2e44ff;color:#fff">Update</button></div>`);editing.batchId=batchId;editing.idx=idx;editing.originalScents=JSON.parse(JSON.stringify(cust.scents));const container=document.getElementById('editScents');cust.scents.forEach(s=>{const row=document.createElement('div');row.className='card';row.style.marginBottom='8px';row.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><div style="flex:3"><label>Scent</label><input list="scentList" class="e_scent" value="${escapeAttr(s.name)}"></div><div style="flex:1"><label>Qty</label><input type="number" class="e_qty" min="1" value="${s.quantity}"></div><div style="flex:1"><label>Size</label><select class="e_size"><option>30ml</option><option>50ml</option></select></div><div style="flex:1"><label>Price ₱</label><input type="number" class="e_price" min="0" step="0.01" value="${s.price}"></div><div style="width:40px"><label>&nbsp;</label><button onclick="this.closest('.card').remove()" class="small btn-danger">✕</button></div></div>`;container.appendChild(row);row.querySelector('.e_size').value=s.size;});}
-function addEditScentRow(){const container=document.getElementById('editScents');const row=document.createElement('div');row.className='card';row.style.marginBottom='8px';row.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><div style="flex:3"><label>Scent</label><input list="scentList" class="e_scent"></div><div style="flex:1"><label>Qty</label><input type="number" class="e_qty" min="1" value="1"></div><div style="flex:1"><label>Size</label><select class="e_size"><option>30ml</option><option>50ml</option></select></div><div style="flex:1"><label>Price ₱</label><input type="number" class="e_price" min="0" step="0.01" value="150"></div><div style="width:40px"><label>&nbsp;</label><button onclick="this.closest('.card').remove()" class="small btn-danger">✕</button></div></div>`;container.appendChild(row);}
-async function saveEditedOrder(){const name=el('editCustName').value.trim();if(!name){alert('Customer required');return;}const rows=Array.from(document.querySelectorAll('#editScents .card'));if(rows.length===0){alert('Add scent rows');return;}editing.originalScents.forEach(s=>{const inv=inventory.find(i=>i.id==s.id);if(inv)inv.ml+=parseInt(s.size)*s.quantity;});const newScents=[];for(const r of rows){const sName=r.querySelector('.e_scent').value.trim();const qty=parseInt(r.querySelector('.e_qty').value);const size=r.querySelector('.e_size').value;const price=parseFloat(r.querySelector('.e_price').value);if(!sName||!qty||!price){alert('Fill scent rows');editing.originalScents.forEach(s=>{const inv=inventory.find(i=>i.id==s.id);if(inv)inv.ml-=parseInt(s.size)*s.quantity;});return;}const inv=inventory.find(i=>i.name===sName);if(!inv){alert(`Scent ${sName} not found`);editing.originalScents.forEach(s=>{const inv2=inventory.find(i=>i.id==s.id);if(inv2)inv2.ml-=parseInt(s.size)*s.quantity;});return;}const mlNeeded=parseInt(size)*qty;if(inv.ml<mlNeeded)alert(`⚠ Warning: Not enough ${inv.name}. Available ${inv.ml}ml, needed ${mlNeeded}ml — will still save.`);const existingScent=editing.originalScents.find(os=>os.id==inv.id);newScents.push({id:inv.id,name:inv.name,quantity:qty,size,price,status:existingScent?existingScent.status:undefined});}for(const s of newScents){const inv=inventory.find(i=>i.id==s.id);inv.ml-=parseInt(s.size)*s.quantity;}const batch=batches.find(b=>b.id==editing.batchId);batch.customers[editing.idx]={name,scents:newScents,status:batch.customers[editing.idx].status};await saveData();closeModal();renderBatches();renderInventory();renderSales();renderBestSellers();}
-async function deleteOrder(batchId,idx){if(!confirm('Delete order?'))return;const batch=batches.find(b=>b.id==batchId);const ord=batch.customers[idx];ord.scents.forEach(s=>{const inv=inventory.find(i=>i.id==s.id);if(inv)inv.ml+=parseInt(s.size)*s.quantity;});batch.customers.splice(idx,1);await saveData();renderBatches();renderInventory();renderSales();renderBestSellers();}
-async function updateStatus(batchId,idx,status){const batch=batches.find(b=>b.id==batchId);batch.customers[idx].status=status;await saveData();renderBatches();renderSales();renderBestSellers();}
-async function deleteBatch(batchId){if(!confirm('Delete batch? All orders will be removed and ML returned.'))return;const batch=batches.find(b=>b.id==batchId);batch.customers.forEach(ord=>ord.scents.forEach(s=>{const inv=inventory.find(i=>i.id==s.id);if(inv)inv.ml+=parseInt(s.size)*s.quantity;}));batches=batches.filter(b=>b.id!=batchId);await saveData();renderBatches();renderInventory();renderSales();renderBestSellers();updateBatchFilters();}
-function exportBatch(batchId){const batch=batches.find(b=>b.id==batchId);const data=JSON.stringify({batch,inventory,expenses,exportedAt:new Date().toISOString()},null,2);const blob=new Blob([data],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${sanitize(batch.name)}.json`;a.click();}
+// ── BULK ORDERS ──
+function openBulkOrderModal(){ openModal(`<h3>Create Bulk Order</h3><div style="margin-top:10px"><label>Customer Name</label><input id="bo_name" placeholder="John Doe"></div><div style="margin-top:10px"><label>Notes (optional)</label><textarea id="bo_notes" rows="2"></textarea></div><div id="bo_items" style="margin-top:12px"></div><div style="margin-top:8px"><button onclick="addBORow()">+ Add Perfume</button></div><div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()" style="background:#6c757d">Cancel</button><button onclick="saveBulkOrder()">Create Order</button></div>`); addBORow(); }
+function addBORow(n='',sz='30ml',p=150,st='pending'){
+  const c=$('bo_items'); const r=document.createElement('div'); r.className='perfume-item-row perfume-status-'+st;
+  r.innerHTML=`<div style="flex:3;min-width:100px"><label>Scent</label><input list="scentList" class="bo_n" value="${escA(n)}"></div><div style="flex:1;min-width:60px"><label>Size</label><select class="bo_s"><option ${sz==='30ml'?'selected':''}>30ml</option><option ${sz==='50ml'?'selected':''}>50ml</option></select></div><div style="flex:1;min-width:60px"><label>Price ₱</label><input type="number" class="bo_p" min="0" step="0.01" value="${p}"></div><div style="flex:1;min-width:60px"><label>Status</label><select class="bo_st" onchange="this.closest('.perfume-item-row').className='perfume-item-row perfume-status-'+this.value"><option value="pending" ${st==='pending'?'selected':''}>Pending</option><option value="sold" ${st==='sold'?'selected':''}>Sold</option><option value="added" ${st==='added'?'selected':''}>Added</option></select></div><div style="width:36px"><label>&nbsp;</label><button onclick="this.closest('.perfume-item-row').remove()" class="small btn-danger">✕</button></div>`;
+  c.appendChild(r);
+}
+async function saveBulkOrder(){
+  const n=$('bo_name').value.trim(); if(!n){ alert('Customer name required'); return; }
+  const rows=Array.from(document.querySelectorAll('#bo_items .perfume-item-row')); if(!rows.length){ alert('Add a perfume'); return; }
+  const perfs=[];
+  for(const r of rows){
+    const sn=r.querySelector('.bo_n').value.trim(), sz=r.querySelector('.bo_s').value, p=parseFloat(r.querySelector('.bo_p').value), st=r.querySelector('.bo_st').value;
+    if(!sn||!p){ alert('Fill all fields'); return; }
+    const inv=inventory.find(i=>i.name===sn); if(!inv){ alert(`"${sn}" not in inventory`); return; }
+    perfs.push({id:uid(),scentId:inv.id,name:inv.name,size:sz,price:p,status:st});
+  }
+  for(const p of perfs){ if(p.status==='sold'){ const inv=inventory.find(i=>i.id===p.scentId); const ml=parseInt(p.size); if(inv.ml<ml) alert(`⚠ Low stock: ${inv.name}`); inv.ml-=ml; } }
+  bulkOrders.push({id:uid(),customerName:n,notes:$('bo_notes').value.trim(),perfumes:perfs,createdAt:new Date().toISOString()});
+  await saveData(); closeModal(); renderBulkOrders(); renderInventory();
+}
 
-// INVENTORY
-function openNewScentModal(){openModal(`<h3>Add New Scent</h3><div style="margin-top:8px"><label>Scent Name</label><input id="scentName"></div><div style="margin-top:8px"><label>Total ML</label><input id="scentML" type="number" min="0"></div><div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()">Cancel</button><button onclick="addScent()" style="background:#2e44ff;color:#fff">Add</button></div>`);}
-async function addScent(){const name=el('scentName').value.trim();const ml=parseInt(el('scentML').value);if(!name||isNaN(ml)){alert('Enter scent and ml');return;}if(inventory.some(i=>i.name.toLowerCase()===name.toLowerCase())){alert('Scent exists');return;}inventory.push({id:uid(),name,ml});await saveData();closeModal();renderInventory();updateScentDatalist();updateBatchFilters();}
+function renderBulkOrders(){
+  const c=$('bulkOrdersContainer');
+  if(!bulkOrders.length){ c.innerHTML='<div class="card">No bulk orders yet.</div>'; return; }
+  const sorted=[...bulkOrders].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  c.innerHTML=sorted.map(o=>{
+    const tot=o.perfumes.reduce((s,p)=>s+p.price,0);
+    const sold=o.perfumes.filter(p=>p.status==='sold').length;
+    const added=o.perfumes.filter(p=>p.status==='added').length;
+    const pend=o.perfumes.filter(p=>p.status==='pending').length;
+    const nonSold=o.perfumes.map((p,i)=>({...p,_i:i})).filter(p=>p.status!=='sold');
+    const soldPs=o.perfumes.map((p,i)=>({...p,_i:i})).filter(p=>p.status==='sold');
+    const pRow=(p,i)=>`<div class="perfume-item-row perfume-status-${p.status}" style="margin-bottom:6px">
+      <div style="flex:2">${bulkPillWrap(p.name,p.status,o.id,i)}</div>
+      <div style="flex:1;text-align:center">${p.size}</div>
+      <div style="flex:1;text-align:center">₱${p.price.toFixed(2)}</div>
+      <div style="flex:1;text-align:center"><span class="status-badge status-${p.status==='sold'?'Paid':p.status==='added'?'Released':'Pending'}">${p.status.toUpperCase()}</span></div>
+    </div>`;
+    const soldToggle=sold>0?`<button class="sold-toggle-btn" id="bst-${o.id}" onclick="toggleBSold('${o.id}')">✅ Sold Items (${sold}) ▼ Show</button><div class="sold-items-container" id="bsc-${o.id}">${soldPs.map(p=>pRow(p,p._i)).join('')}</div>`:'';
+    return `<div style="border:3px solid #667eea;background:#fff;padding:18px;border-radius:12px;margin-bottom:16px;box-shadow:0 4px 12px rgba(102,126,234,0.15)">
+      <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div><div style="font-weight:800;font-size:18px">${esc(o.customerName)}</div><div class="muted">Created: ${new Date(o.createdAt).toLocaleString()}</div>${o.notes?`<div class="muted" style="font-style:italic">${esc(o.notes)}</div>`:''}</div>
+        <div class="actions"><button onclick="openEditBulk('${o.id}')" class="small">Edit</button><button onclick="delBulk('${o.id}')" class="small btn-danger">Delete</button></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <div class="card" style="flex:1;min-width:60px;background:#e9fbe9"><div class="muted">Sold</div><div style="font-weight:800;color:#198754">${sold}</div></div>
+        <div class="card" style="flex:1;min-width:60px;background:#fff9e6"><div class="muted">Added</div><div style="font-weight:800;color:#ff8800">${added}</div></div>
+        <div class="card" style="flex:1;min-width:60px;background:#fff5f5"><div class="muted">Pending</div><div style="font-weight:800;color:#dc3545">${pend}</div></div>
+        <div class="card" style="flex:1;min-width:60px;background:#e6f2ff"><div class="muted">Total</div><div style="font-weight:800;color:#667eea">₱${tot.toFixed(2)}</div></div>
+      </div>
+      <div style="background:#f8f9fa;border-radius:10px;padding:12px">
+        ${nonSold.map(p=>pRow(p,p._i)).join('')||'<div class="muted">All items sold.</div>'}
+        ${soldToggle}
+      </div>
+    </div>`;
+  }).join('');
+  requestAnimationFrame(attachPills);
+}
+function toggleBSold(oid){ const c=$('bsc-'+oid),b=$('bst-'+oid); if(!c) return; const o=c.classList.toggle('open'); const n=c.querySelectorAll('.perfume-item-row').length; b.innerHTML=o?`✅ Sold Items (${n}) ▲ Hide`:`✅ Sold Items (${n}) ▼ Show`; }
 
-function renderInventory(){const search=el('inventorySearch').value.trim().toLowerCase();const filtered=inventory.filter(s=>!search||s.name.toLowerCase().includes(search));const reorderNeeded=filtered.filter(s=>s.ml<0).sort((a,b)=>a.ml-b.ml||a.name.localeCompare(b.name));const inStock=filtered.filter(s=>s.ml>=30).sort((a,b)=>b.ml-a.ml||a.name.localeCompare(b.name));const lowStock=filtered.filter(s=>s.ml>0&&s.ml<30).sort((a,b)=>a.ml-b.ml||a.name.localeCompare(b.name));const neutral=filtered.filter(s=>s.ml===0).sort((a,b)=>a.name.localeCompare(b.name));const renderCard=(s)=>{let cardClass='card';let message='';let bgStyle='';const bottles=Math.floor(Math.abs(s.ml)/30);const bottleText=bottles>0?` (${bottles} ${bottles===1?'bottle':'bottles'})`:'';if(s.ml<0){cardClass+=' low';message=`<div class="muted" style="color:#dc3545;font-weight:600">🚨 Reorder Needed${bottleText}</div>`;}else if(s.ml===0){bgStyle='background:#f9f9f9;';}else if(s.ml<30){bgStyle='background:#fff9e6;border-left:4px solid #ffc107;';message=`<div class="muted" style="color:#ff8800;font-weight:600">⚠️ Low Stock${bottleText}</div>`;}else{bgStyle='background:#e9fbe9;border-left:4px solid #28a745;';message=`<div class="muted" style="color:#198754;font-weight:600">✅ In Stock${bottleText}</div>`;}return `<div class="${cardClass}" style="${bgStyle}display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div><div style="font-weight:800">${escape(s.name)}</div>${message}</div><div style="text-align:right"><div style="font-weight:800">${s.ml} ml</div><div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end"><button onclick="openAddStock(${s.id})" class="small">+ Add</button><button onclick="editML(${s.id})" class="small btn-secondary">Edit</button><button onclick="deleteScent(${s.id})" class="small btn-danger">Delete</button></div></div></div>`;};const leftColumn=[...inStock,...lowStock,...neutral].map(renderCard).join('');const rightColumn=reorderNeeded.map(renderCard).join('');el('inventoryList').innerHTML=`<div class="inventory-grid"><div class="inventory-column"><div class="column-header">Available Scents</div>${leftColumn||'<div class="muted" style="padding:10px">No scents available</div>'}</div><div class="inventory-column"><div class="column-header">Reorder Needed</div>${rightColumn||'<div class="muted" style="padding:10px">No reorders needed</div>'}</div></div>`;updateScentDatalist();}
-function updateScentDatalist(){el('scentList').innerHTML=inventory.map(i=>`<option value="${escapeAttr(i.name)}">`).join('');}
-function openAddStock(id){openModal(`<h3>Add Stock</h3><div><label>ML to add</label><input id="addMl" type="number" min="1"></div><div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()">Cancel</button><button onclick="confirmAddStock()" style="background:#2e44ff;color:#fff">Add</button></div>`);modalState={type:'addStock',id};}
-let modalState=null;
-async function confirmAddStock(){const ml=parseInt(el('addMl').value);if(isNaN(ml)||ml<=0){alert('Enter ML');return;}const inv=inventory.find(i=>i.id===modalState.id);inv.ml+=ml;await saveData();closeModal();renderInventory();renderSales();}
-async function editML(id){const inv=inventory.find(i=>i.id==id);const val=prompt(`Set new ML for ${inv.name}`,inv.ml);if(val===null)return;const ml=parseInt(val);if(isNaN(ml)||ml<0){alert('Invalid');return;}inv.ml=ml;await saveData();renderInventory();renderSales();}
-async function deleteScent(id){if(!confirm('Delete scent?'))return;const used=batches.some(b=>b.customers.some(c=>c.scents.some(s=>s.id==id)));if(used&&!confirm('Scent used in orders. Continue?'))return;inventory=inventory.filter(i=>i.id!=id);await saveData();renderInventory();renderSales();updateScentDatalist();}
+let _eb={id:null,orig:[]};
+function openEditBulk(oid){
+  const o=bulkOrders.find(x=>x.id==oid); if(!o) return;
+  _eb={id:oid,orig:JSON.parse(JSON.stringify(o.perfumes))};
+  openModal(`<h3>Edit Bulk Order</h3><div style="margin-top:10px"><label>Customer Name</label><input id="ebo_name" value="${escA(o.customerName)}"></div><div style="margin-top:10px"><label>Notes</label><textarea id="ebo_notes" rows="2">${escA(o.notes)}</textarea></div><div id="ebo_items" style="margin-top:12px"></div><div style="margin-top:8px"><button onclick="addEBORow()">+ Add Perfume</button></div><div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()" style="background:#6c757d">Cancel</button><button onclick="saveEditBulk()">Update</button></div>`);
+  o.perfumes.forEach(p=>addEBORow(p.name,p.size,p.price,p.status));
+}
+function addEBORow(n='',sz='30ml',p=150,st='pending'){
+  const c=$('ebo_items'); const r=document.createElement('div'); r.className='perfume-item-row perfume-status-'+st;
+  r.innerHTML=`<div style="flex:3;min-width:100px"><label>Scent</label><input list="scentList" class="ebo_n" value="${escA(n)}"></div><div style="flex:1;min-width:60px"><label>Size</label><select class="ebo_s"><option ${sz==='30ml'?'selected':''}>30ml</option><option ${sz==='50ml'?'selected':''}>50ml</option></select></div><div style="flex:1;min-width:60px"><label>Price ₱</label><input type="number" class="ebo_p" min="0" step="0.01" value="${p}"></div><div style="flex:1;min-width:60px"><label>Status</label><select class="ebo_st" onchange="this.closest('.perfume-item-row').className='perfume-item-row perfume-status-'+this.value"><option value="pending" ${st==='pending'?'selected':''}>Pending</option><option value="sold" ${st==='sold'?'selected':''}>Sold</option><option value="added" ${st==='added'?'selected':''}>Added</option></select></div><div style="width:36px"><label>&nbsp;</label><button onclick="this.closest('.perfume-item-row').remove()" class="small btn-danger">✕</button></div>`;
+  c.appendChild(r);
+}
+async function saveEditBulk(){
+  const n=$('ebo_name').value.trim(); if(!n){ alert('Name required'); return; }
+  const rows=Array.from(document.querySelectorAll('#ebo_items .perfume-item-row')); if(!rows.length){ alert('Add a perfume'); return; }
+  _eb.orig.forEach(p=>{ if(p.status==='sold'){ const inv=inventory.find(i=>i.id==p.scentId); if(inv) inv.ml+=parseInt(p.size); } });
+  const np=[];
+  for(const r of rows){
+    const sn=r.querySelector('.ebo_n').value.trim(), sz=r.querySelector('.ebo_s').value, p=parseFloat(r.querySelector('.ebo_p').value), st=r.querySelector('.ebo_st').value;
+    if(!sn||!p){ alert('Fill all fields'); _eb.orig.forEach(p=>{ if(p.status==='sold'){ const inv=inventory.find(i=>i.id==p.scentId); if(inv) inv.ml-=parseInt(p.size); } }); return; }
+    const inv=inventory.find(i=>i.name===sn); if(!inv){ alert(`"${sn}" not found`); return; }
+    np.push({id:uid(),scentId:inv.id,name:inv.name,size:sz,price:p,status:st});
+  }
+  for(const p of np){ if(p.status==='sold'){ const inv=inventory.find(i=>i.id===p.scentId); const ml=parseInt(p.size); if(inv.ml<ml) alert(`⚠ Low stock: ${inv.name}`); inv.ml-=ml; } }
+  const o=bulkOrders.find(x=>x.id==_eb.id); o.customerName=n; o.notes=$('ebo_notes').value.trim(); o.perfumes=np;
+  await saveData(); closeModal(); renderBulkOrders(); renderInventory();
+}
+async function delBulk(oid){
+  if(!confirm('Delete bulk order?')) return;
+  const o=bulkOrders.find(x=>x.id==oid);
+  o.perfumes.forEach(p=>{ if(p.status==='sold'){ const inv=inventory.find(i=>i.id==p.scentId); if(inv) inv.ml+=parseInt(p.size); } });
+  bulkOrders=bulkOrders.filter(x=>x.id!=oid); await saveData(); renderBulkOrders(); renderInventory();
+}
 
-// EXPENSES
-function openNewExpenseModal(){updateBatchFilters();openModal(`<h3>Add Expense</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>Category</label><select id="expCat"><option>Fragrance Oil</option><option>DPG</option><option>PGA</option><option>Fixative</option><option>Fragrance Bottles</option><option>Others</option></select></div><div><label>Date</label><input id="expDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div></div><div style="margin-top:8px"><label>Item Name</label><input id="expItem" list="scentList"></div><div style="margin-top:8px"><label>Quantity/Unit</label><input id="expQty"></div><div style="margin-top:8px"><label>Price (₱)</label><input id="expPrice" type="number" min="0" step="0.01"></div><div style="margin-top:8px"><label>Assign to Batch (optional)</label><select id="expBatch"><option value=''>None</option>${batches.map(b=>`<option value="${b.id}">${escape(b.name)}</option>`).join('')}</select></div><div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()">Cancel</button><button onclick="addExpense()" style="background:#2e44ff;color:#fff">Add</button></div>`);}
-async function addExpense(){const category=el('expCat').value;const item=el('expItem').value.trim();const qty=el('expQty').value.trim();const price=parseFloat(el('expPrice').value);const date=el('expDate').value;const batchId=el('expBatch').value||null;if(!item||!qty||isNaN(price)||!date){alert('Fill all fields');return;}const batchName=batchId?(batches.find(b=>b.id==batchId)||{}).name:'';expenses.push({id:uid(),category,item,quantity:qty,price,date,batchId,batchName});await saveData();closeModal();renderExpenses();}
+// ── INVENTORY ──
+function openNewScentModal(){ openModal(`<h3>Add New Scent</h3><div style="margin-top:8px"><label>Scent Name</label><input id="ns_name"></div><div style="margin-top:8px"><label>Total ML</label><input id="ns_ml" type="number" min="0"></div><div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()" style="background:#6c757d">Cancel</button><button onclick="addScent()">Add</button></div>`); }
+async function addScent(){
+  const n=$('ns_name').value.trim(), ml=parseInt($('ns_ml').value);
+  if(!n||isNaN(ml)){ alert('Fill both fields'); return; }
+  if(inventory.some(i=>i.name.toLowerCase()===n.toLowerCase())){ alert('Scent already exists'); return; }
+  inventory.push({id:uid(),name:n,ml}); await saveData(); closeModal(); renderInventory(); updateScentDatalist();
+}
+function renderInventory(){
+  const s=$('inventorySearch').value.trim().toLowerCase();
+  const f=inventory.filter(x=>!s||x.name.toLowerCase().includes(s));
+  const reorder=f.filter(x=>x.ml<0).sort((a,b)=>a.ml-b.ml);
+  const ok=f.filter(x=>x.ml>=30).sort((a,b)=>b.ml-a.ml);
+  const low=f.filter(x=>x.ml>0&&x.ml<30).sort((a,b)=>a.ml-b.ml);
+  const zero=f.filter(x=>x.ml===0).sort((a,b)=>a.name.localeCompare(b.name));
+  const card=s=>{
+    const bt=Math.floor(Math.abs(s.ml)/30), btxt=bt>0?` (${bt} ${bt===1?'bottle':'bottles'})`:'';
+    let cls='card',msg='',bg='';
+    if(s.ml<0){ cls+=' low'; msg=`<div class="muted" style="color:#dc3545;font-weight:600">🚨 Reorder Needed${btxt}</div>`; }
+    else if(s.ml===0){ bg='background:#f9f9f9;'; }
+    else if(s.ml<30){ bg='background:#fff9e6;border-left:4px solid #ffc107;'; msg=`<div class="muted" style="color:#ff8800;font-weight:600">⚠️ Low Stock${btxt}</div>`; }
+    else{ bg='background:#e9fbe9;border-left:4px solid #28a745;'; msg=`<div class="muted" style="color:#198754;font-weight:600">✅ In Stock${btxt}</div>`; }
+    return `<div class="${cls}" style="${bg}display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div><div style="font-weight:800">${esc(s.name)}</div>${msg}</div>
+      <div style="text-align:right"><div style="font-weight:800">${s.ml} ml</div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button onclick="openAddStock(${s.id})" class="small">+ Add</button>
+          <button onclick="editML(${s.id})" class="small btn-secondary">Edit</button>
+          <button onclick="delScent(${s.id})" class="small btn-danger">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  };
+  $('inventoryList').innerHTML=`<div class="inventory-grid">
+    <div class="inventory-column"><div class="column-header">Available Scents</div>${[...ok,...low,...zero].map(card).join('')||'<div class="muted" style="padding:10px">None available</div>'}</div>
+    <div class="inventory-column"><div class="column-header">Reorder Needed</div>${reorder.map(card).join('')||'<div class="muted" style="padding:10px">None needed ✅</div>'}</div>
+  </div>`;
+  updateScentDatalist();
+}
+let _ms=null;
+function openAddStock(id){ openModal(`<h3>Add Stock</h3><div><label>ML to add</label><input id="as_ml" type="number" min="1"></div><div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()" style="background:#6c757d">Cancel</button><button onclick="confirmAddStock()">Add</button></div>`); _ms=id; }
+async function confirmAddStock(){ const ml=parseInt($('as_ml').value); if(isNaN(ml)||ml<=0){ alert('Enter ML'); return; } const inv=inventory.find(i=>i.id===_ms); inv.ml+=ml; await saveData(); closeModal(); renderInventory(); }
+async function editML(id){ const inv=inventory.find(i=>i.id==id); const v=prompt(`Set ML for ${inv.name}`,inv.ml); if(v===null) return; const ml=parseInt(v); if(isNaN(ml)||ml<0){ alert('Invalid'); return; } inv.ml=ml; await saveData(); renderInventory(); }
+async function delScent(id){ if(!confirm('Delete scent?')) return; inventory=inventory.filter(i=>i.id!=id); await saveData(); renderInventory(); updateScentDatalist(); }
 
-function renderExpenses(){const cat=el('expenseCategoryFilter').value;const batchFilter=el('expenseBatchFilter').value;const itemFilter=el('expenseItemFilter').value.trim().toLowerCase();let rows=expenses.slice();if(cat)rows=rows.filter(r=>r.category===cat);if(batchFilter)rows=rows.filter(r=>r.batchId==batchFilter);if(itemFilter)rows=rows.filter(r=>r.item.toLowerCase().includes(itemFilter));el('expensesTable').innerHTML=rows.map(r=>`<tr><td>${new Date(r.date).toLocaleDateString()}</td><td>${escape(r.category)}</td><td>${escape(r.item)}</td><td>${escape(r.quantity)}</td><td>₱${r.price.toFixed(2)}</td><td>${escape(r.batchName||'')}</td><td><button onclick="deleteExpense('${r.id}')" class="small btn-danger">Delete</button></td></tr>`).join('')||`<tr><td colspan="7" class="muted">No expenses</td></tr>`;const filteredTotal=rows.reduce((s,e)=>s+e.price,0);let summaryHTML='';if(!cat&&!batchFilter){const allTotal=expenses.reduce((s,e)=>s+e.price,0);const cats={};['Fragrance Oil','DPG','PGA','Fixative','Fragrance Bottles','Others'].forEach(c=>{cats[c]=expenses.filter(e=>e.category===c).reduce((s,e)=>s+e.price,0);});summaryHTML=`<div class="s expense-card"><div class="muted">Total Expenses</div><div>₱${allTotal.toFixed(2)}</div></div>`+Object.entries(cats).map(([k,v])=>`<div class="s expense-card"><div class="muted">${k}</div><div>₱${v.toFixed(2)}</div></div>`).join('');}else if(!cat&&batchFilter){const batchName=batches.find(b=>b.id==batchFilter)?.name||'Selected Batch';const bExp=expenses.filter(e=>e.batchId==batchFilter);const bTotal=bExp.reduce((s,e)=>s+e.price,0);summaryHTML=`<div class="s expense-card"><div class="muted">${escape(batchName)} - Total</div><div>₱${bTotal.toFixed(2)}</div></div>`;}else{summaryHTML=`<div class="s expense-card"><div class="muted">${cat||'Filtered'} Total</div><div>₱${filteredTotal.toFixed(2)}</div></div>`;}el('expenseSummary').innerHTML=summaryHTML;}
-async function deleteExpense(id){if(!confirm('Delete expense?'))return;expenses=expenses.filter(e=>e.id!=id);await saveData();renderExpenses();}
+// ── EXPENSES ──
+function openNewExpenseModal(){
+  updateBatchFilters();
+  openModal(`<h3>Add Expense</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div><label>Category</label><select id="ex_cat"><option>Fragrance Oil</option><option>DPG</option><option>PGA</option><option>Fixative</option><option>Fragrance Bottles</option><option>Others</option></select></div>
+    <div><label>Date</label><input id="ex_date" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+  </div>
+  <div style="margin-top:8px"><label>Item Name</label><input id="ex_item" list="scentList"></div>
+  <div style="margin-top:8px"><label>Qty / Unit</label><input id="ex_qty"></div>
+  <div style="margin-top:8px"><label>Price (₱)</label><input id="ex_price" type="number" min="0" step="0.01"></div>
+  <div style="margin-top:8px"><label>Assign to Batch (optional)</label><select id="ex_batch"><option value="">None</option>${batches.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('')}</select></div>
+  <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px"><button onclick="closeModal()" style="background:#6c757d">Cancel</button><button onclick="addExpense()">Add</button></div>`);
+}
+async function addExpense(){
+  const cat=$('ex_cat').value, item=$('ex_item').value.trim(), qty=$('ex_qty').value.trim(), price=parseFloat($('ex_price').value), date=$('ex_date').value, bId=$('ex_batch').value||null;
+  if(!item||!qty||isNaN(price)||!date){ alert('Fill all fields'); return; }
+  const bn=bId?(batches.find(b=>b.id==bId)||{}).name:'';
+  expenses.push({id:uid(),category:cat,item,quantity:qty,price,date,batchId:bId,batchName:bn});
+  await saveData(); closeModal(); renderExpenses();
+}
+function renderExpenses(){
+  const cat=$('expenseCategoryFilter').value, bf=$('expenseBatchFilter').value, itf=$('expenseItemFilter').value.trim().toLowerCase();
+  let rows=expenses.slice();
+  if(cat) rows=rows.filter(r=>r.category===cat);
+  if(bf) rows=rows.filter(r=>r.batchId==bf);
+  if(itf) rows=rows.filter(r=>r.item.toLowerCase().includes(itf));
+  $('expensesTable').innerHTML=rows.map(r=>`<tr><td>${new Date(r.date).toLocaleDateString()}</td><td>${esc(r.category)}</td><td>${esc(r.item)}</td><td>${esc(r.quantity)}</td><td>₱${r.price.toFixed(2)}</td><td>${esc(r.batchName||'')}</td><td><button onclick="delExpense('${r.id}')" class="small btn-danger">Delete</button></td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="padding:12px">No expenses found</td></tr>`;
+  const tot=expenses.reduce((s,e)=>s+e.price,0);
+  const cats=['Fragrance Oil','DPG','PGA','Fixative','Fragrance Bottles','Others'];
+  $('expenseSummary').innerHTML=`<div class="s expense-card"><div class="muted">Total</div><div>₱${tot.toFixed(2)}</div></div>`+cats.map(c=>`<div class="s expense-card"><div class="muted">${c}</div><div>₱${expenses.filter(e=>e.category===c).reduce((s,e)=>s+e.price,0).toFixed(2)}</div></div>`).join('');
+}
+async function delExpense(id){ if(!confirm('Delete?')) return; expenses=expenses.filter(e=>e.id!=id); await saveData(); renderExpenses(); }
 
-// SALES
-function renderSales(){updateBatchFilters();updateScentDatalist();const batchFilter=el('salesBatchFilter')?el('salesBatchFilter').value:'';const statusFilter=el('salesStatusFilter')?el('salesStatusFilter').value:'';const from=el('salesFrom')?el('salesFrom').value:'';const to=el('salesTo')?el('salesTo').value:'';let totalPaid=0,totalPending=0,totalUnpaid=0;const container=el('salesContainer');function summaryBar(paid,released,pending){const total=paid+released+pending;return `<div style="display:flex;gap:10px;flex-shrink:0"><div style="text-align:center;padding:6px 10px;background:#e9fbe9;border-radius:8px;min-width:70px"><div class="muted" style="font-size:10px">PAID</div><div style="font-weight:800;color:#198754;font-size:13px">₱${paid.toFixed(2)}</div></div><div style="text-align:center;padding:6px 10px;background:#fff9e6;border-radius:8px;min-width:70px"><div class="muted" style="font-size:10px">RELEASED</div><div style="font-weight:800;color:#ff8800;font-size:13px">₱${released.toFixed(2)}</div></div><div style="text-align:center;padding:6px 10px;background:#fff5f5;border-radius:8px;min-width:70px"><div class="muted" style="font-size:10px">PENDING</div><div style="font-weight:800;color:#dc3545;font-size:13px">₱${pending.toFixed(2)}</div></div><div style="text-align:center;padding:6px 10px;background:#e6f2ff;border-radius:8px;min-width:70px"><div class="muted" style="font-size:10px">TOTAL</div><div style="font-weight:800;color:#667eea;font-size:13px">₱${total.toFixed(2)}</div></div></div>`;}function bulkStatusToPay(st){return st==='sold'?'Paid':st==='added'?'Released':'Pending';}const shownBatches=batches.filter(b=>{if(batchFilter&&b.id!=batchFilter)return false;if(from||to){const d=new Date(b.createdAt).toISOString().slice(0,10);if(from&&d<from)return false;if(to&&d>to)return false;}return true;});let batchSectionPaid=0,batchSectionReleased=0,batchSectionPending=0;const batchHtml=shownBatches.map(batch=>{let bPaid=0,bReleased=0,bPending=0;const customers=batch.customers.filter(c=>!statusFilter||c.status===statusFilter);if(customers.length===0&&statusFilter)return'';const rowsHtml=customers.map(c=>{let cPaid=0,cReleased=0,cPending=0;c.scents.forEach(s=>{const amt=s.price*s.quantity;const st=s.status||c.status;if(st==='Paid')cPaid+=amt;else if(st==='Released')cReleased+=amt;else cPending+=amt;});const cTotal=cPaid+cReleased+cPending;bPaid+=cPaid;bReleased+=cReleased;bPending+=cPending;totalPaid+=cPaid;totalPending+=cReleased;totalUnpaid+=cPending;const chips=[cPaid>0?`<span style="font-size:12px;background:#c8f7d4;color:#0b4f1a;padding:3px 9px;border-radius:10px;font-weight:700">✓ Paid ₱${cPaid.toFixed(2)}</span>`:'',cReleased>0?`<span style="font-size:12px;background:#c2f0ff;color:#0b4860;padding:3px 9px;border-radius:10px;font-weight:700">↗ Released ₱${cReleased.toFixed(2)}</span>`:'',cPending>0?`<span style="font-size:12px;background:#ffd966;color:#3b2d00;padding:3px 9px;border-radius:10px;font-weight:700">⏳ Pending ₱${cPending.toFixed(2)}</span>`:''].filter(Boolean).join(' ');const scentRows=c.scents.map(s=>{const amt=s.price*s.quantity;const st=s.status||c.status;const dotColor=st==='Paid'?'#28a745':st==='Released'?'#0b7ec4':'#e6b800';return `<tr style="background:#fafafa"><td style="padding:5px 10px 5px 24px;border-bottom:1px solid #f1f5ff;color:#555"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};margin-right:6px;vertical-align:middle"></span>${escape(s.name)}, ${s.size} (${s.quantity})</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5ff;text-align:right;font-weight:600">₱${amt.toFixed(2)}</td></tr>`;}).join('');return `<tr style="border-top:2px solid #e6eef9;background:#fff"><td style="padding:10px 10px 6px;font-weight:700;font-size:14px">${escape(c.name)}<div style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap">${chips}</div></td><td style="padding:10px 10px 6px;text-align:right;font-weight:800;font-size:15px">₱${cTotal.toFixed(2)}</td></tr>${scentRows}<tr><td colspan="2" style="padding:2px;border:none"></td></tr>`;}).join('');batchSectionPaid+=bPaid;batchSectionReleased+=bReleased;batchSectionPending+=bPending;const bTotal=bPaid+bReleased+bPending;return `<div class="card" style="margin-bottom:10px;border:2px solid #667eea"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;flex-wrap:wrap;gap:8px"><div><strong style="font-size:15px">${escape(batch.name)}</strong><div class="muted">${customers.length} customers • ${customers.reduce((s,c)=>s+c.scents.reduce((a,sc)=>a+sc.quantity,0),0)} bottles</div></div>${summaryBar(bPaid,bReleased,bPending)}</div><table style="width:100%"><thead><tr style="background:#f8f9fa"><th style="padding:8px 10px">Customer &amp; Scents</th><th style="padding:8px 10px;text-align:right">Amount</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;}).filter(Boolean).join('');let bulkSectionPaid=0,bulkSectionReleased=0,bulkSectionPending=0;let bulkHtml='';if(!batchFilter){const shownBulk=bulkOrders.filter(o=>{if(from||to){const d=new Date(o.createdAt).toISOString().slice(0,10);if(from&&d<from)return false;if(to&&d>to)return false;}return true;});const bulkOrdersHtml=shownBulk.map(order=>{let oPaid=0,oReleased=0,oPending=0;const payStatus=p=>bulkStatusToPay(p.status);const perfumes=statusFilter?order.perfumes.filter(p=>payStatus(p)===statusFilter):order.perfumes;if(perfumes.length===0&&statusFilter)return'';const perfumeRows=perfumes.map(p=>{const st=payStatus(p);const amt=p.price;if(st==='Paid'){oPaid+=amt;}else if(st==='Released'){oReleased+=amt;}else{oPending+=amt;}totalPaid+=st==='Paid'?amt:0;totalPending+=st==='Released'?amt:0;totalUnpaid+=st==='Pending'?amt:0;const dotColor=st==='Paid'?'#28a745':st==='Released'?'#0b7ec4':'#e6b800';return `<tr style="background:#fafafa"><td style="padding:5px 10px 5px 24px;border-bottom:1px solid #f1f5ff;color:#555"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};margin-right:6px;vertical-align:middle"></span>${escape(p.name)}, ${p.size}</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5ff;text-align:right;font-weight:600">₱${amt.toFixed(2)}</td></tr>`;}).join('');const oTotal=oPaid+oReleased+oPending;bulkSectionPaid+=oPaid;bulkSectionReleased+=oReleased;bulkSectionPending+=oPending;const breakdown=(oPaid>0||oReleased>0)&&oPending>0?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:3px">${oPaid>0?`<span style="font-size:12px;background:#c8f7d4;color:#0b4f1a;padding:3px 9px;border-radius:10px;font-weight:700">✓ Paid ₱${oPaid.toFixed(2)}</span>`:''}${oReleased>0?`<span style="font-size:12px;background:#c2f0ff;color:#0b4860;padding:3px 9px;border-radius:10px;font-weight:700">↗ Released ₱${oReleased.toFixed(2)}</span>`:''}${oPending>0?`<span style="font-size:12px;background:#ffd966;color:#3b2d00;padding:3px 9px;border-radius:10px;font-weight:700">⏳ Pending ₱${oPending.toFixed(2)}</span>`:''}</div>`:`<div style="margin-top:4px">${oPaid>0?`<span style="font-size:12px;background:#c8f7d4;color:#0b4f1a;padding:3px 9px;border-radius:10px;font-weight:700">✓ Paid</span>`:oReleased>0?`<span style="font-size:12px;background:#c2f0ff;color:#0b4860;padding:3px 9px;border-radius:10px;font-weight:700">↗ Released</span>`:`<span style="font-size:12px;background:#ffd966;color:#3b2d00;padding:3px 9px;border-radius:10px;font-weight:700">⏳ Pending</span>`}</div>`;return `<tr style="border-top:2px solid #e6eef9;background:#fff"><td style="padding:10px 10px 6px;font-weight:700;font-size:14px">${escape(order.customerName)} <span style="font-size:11px;color:#999;font-weight:400">Bulk</span>${breakdown}</td><td style="padding:10px 10px 6px;text-align:right;font-weight:800;font-size:15px">₱${oTotal.toFixed(2)}</td></tr>${perfumeRows}<tr><td colspan="2" style="padding:2px;border:none"></td></tr>`;}).filter(Boolean).join('');if(bulkOrdersHtml){bulkHtml=`<div style="margin:16px 0 6px;display:flex;align-items:center;gap:10px"><div style="font-weight:800;font-size:15px;color:#667eea">📦 Bulk Orders</div><div style="flex:1;height:2px;background:#e6eef9;border-radius:2px"></div></div><div class="card" style="margin-bottom:10px;border:2px solid #a78bfa"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;flex-wrap:wrap;gap:8px"><div><strong style="font-size:15px">All Bulk Orders</strong><div class="muted">${shownBulk.length} orders • ${shownBulk.reduce((s,o)=>s+o.perfumes.length,0)} perfumes</div></div>${summaryBar(bulkSectionPaid,bulkSectionReleased,bulkSectionPending)}</div><table style="width:100%"><thead><tr style="background:#f8f9fa"><th style="padding:8px 10px">Customer &amp; Scents</th><th style="padding:8px 10px;text-align:right">Amount</th></tr></thead><tbody>${bulkOrdersHtml}</tbody></table></div>`;}}const batchSection=batchHtml?`<div style="margin-bottom:6px;display:flex;align-items:center;gap:10px"><div style="font-weight:800;font-size:15px;color:#667eea">🗂️ Batch Orders</div><div style="flex:1;height:2px;background:#e6eef9;border-radius:2px"></div></div>${batchHtml}`:'';container.innerHTML=(batchSection||bulkHtml)?batchSection+bulkHtml:'<div class="muted" style="padding:12px">No orders match the selected filters.</div>';el('totalPaid').textContent=`₱${totalPaid.toFixed(2)}`;el('totalPending').textContent=`₱${totalPending.toFixed(2)}`;el('totalUnpaid').textContent=`₱${totalUnpaid.toFixed(2)}`;el('overallSales').textContent=`₱${(totalPaid+totalPending+totalUnpaid).toFixed(2)}`;}
+// ── SALES ──
+function renderSales(){
+  updateBatchFilters();
+  const bf=$('salesBatchFilter').value, sf=$('salesStatusFilter').value, fr=$('salesFrom').value, to=$('salesTo').value;
+  let tPaid=0,tRel=0,tPend=0;
+  const sBar=(p,r,n)=>{const t=p+r+n;return `<div style="display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0">
+    <div style="text-align:center;padding:5px 8px;background:#e9fbe9;border-radius:8px;min-width:65px"><div class="muted" style="font-size:10px">PAID</div><div style="font-weight:800;color:#198754;font-size:12px">₱${p.toFixed(2)}</div></div>
+    <div style="text-align:center;padding:5px 8px;background:#fff9e6;border-radius:8px;min-width:65px"><div class="muted" style="font-size:10px">RELEASED</div><div style="font-weight:800;color:#ff8800;font-size:12px">₱${r.toFixed(2)}</div></div>
+    <div style="text-align:center;padding:5px 8px;background:#fff5f5;border-radius:8px;min-width:65px"><div class="muted" style="font-size:10px">PENDING</div><div style="font-weight:800;color:#dc3545;font-size:12px">₱${n.toFixed(2)}</div></div>
+    <div style="text-align:center;padding:5px 8px;background:#e6f2ff;border-radius:8px;min-width:65px"><div class="muted" style="font-size:10px">TOTAL</div><div style="font-weight:800;color:#667eea;font-size:12px">₱${t.toFixed(2)}</div></div>
+  </div>`;};
+  const bSrc=batches.filter(b=>{ if(bf&&b.id!=bf) return false; const d=new Date(b.createdAt).toISOString().slice(0,10); if(fr&&d<fr) return false; if(to&&d>to) return false; return true; });
+  const bHtml=bSrc.map(batch=>{
+    let bp=0,br=0,bn=0;
+    const custs=batch.customers.filter(c=>!sf||c.status===sf); if(!custs.length&&sf) return '';
+    const rHtml=custs.map(c=>{
+      let cp=0,cr=0,cn=0;
+      c.scents.forEach(s=>{ const a=s.price*s.quantity,st=s.status||c.status; if(st==='Paid')cp+=a; else if(st==='Released')cr+=a; else cn+=a; });
+      bp+=cp;br+=cr;bn+=cn;tPaid+=cp;tRel+=cr;tPend+=cn;
+      const chips=[cp>0?`<span style="font-size:12px;background:#c8f7d4;color:#0b4f1a;padding:3px 9px;border-radius:10px;font-weight:700">✓ Paid ₱${cp.toFixed(2)}</span>`:'',cr>0?`<span style="font-size:12px;background:#c2f0ff;color:#0b4860;padding:3px 9px;border-radius:10px;font-weight:700">↗ Released ₱${cr.toFixed(2)}</span>`:'',cn>0?`<span style="font-size:12px;background:#ffd966;color:#3b2d00;padding:3px 9px;border-radius:10px;font-weight:700">⏳ Pending ₱${cn.toFixed(2)}</span>`:''].filter(Boolean).join(' ');
+      const sRows=c.scents.map(s=>{ const a=s.price*s.quantity,st=s.status||c.status,dc=st==='Paid'?'#28a745':st==='Released'?'#0b7ec4':'#e6b800'; return `<tr style="background:#fafafa"><td style="padding:5px 10px 5px 24px;border-bottom:1px solid #f1f5ff;color:#555"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dc};margin-right:6px;vertical-align:middle"></span>${esc(s.name)}, ${s.size} (${s.quantity})</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5ff;text-align:right;font-weight:600">₱${a.toFixed(2)}</td></tr>`; }).join('');
+      return `<tr style="border-top:2px solid #e6eef9;background:#fff"><td style="padding:10px;font-weight:700">${esc(c.name)}<div style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap">${chips}</div></td><td style="padding:10px;text-align:right;font-weight:800">₱${(cp+cr+cn).toFixed(2)}</td></tr>${sRows}<tr><td colspan="2" style="padding:2px;border:none"></td></tr>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:10px;border:2px solid #667eea"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;flex-wrap:wrap;gap:8px"><div><strong>${esc(batch.name)}</strong><div class="muted">${custs.length} customers</div></div>${sBar(bp,br,bn)}</div><table style="width:100%"><thead><tr style="background:#f8f9fa"><th style="padding:8px 10px">Customer & Scents</th><th style="padding:8px 10px;text-align:right">Amount</th></tr></thead><tbody>${rHtml}</tbody></table></div>`;
+  }).filter(Boolean).join('');
 
-// BEST SELLERS
-function renderBestSellers(){updateBatchFilters();const batchFilter=el('sellersBatchFilter').value;const statusFilter=el('sellersStatusFilter').value;const scentStats={};let totalBottles=0,totalRevenue=0;batches.forEach(batch=>{if(batchFilter&&batch.id!=batchFilter)return;batch.customers.forEach(customer=>{if(statusFilter&&customer.status!==statusFilter)return;customer.scents.forEach(scent=>{if(!scentStats[scent.name])scentStats[scent.name]={name:scent.name,bottles:0,revenue:0,customers:0,orders:[]};const bottlesSold=scent.quantity;const scentRevenue=scent.price*scent.quantity;scentStats[scent.name].bottles+=bottlesSold;scentStats[scent.name].revenue+=scentRevenue;scentStats[scent.name].customers+=1;scentStats[scent.name].orders.push({customer:customer.name,quantity:bottlesSold,size:scent.size,amount:scentRevenue,status:customer.status,batch:batch.name});totalBottles+=bottlesSold;totalRevenue+=scentRevenue;});});});const sortedScents=Object.values(scentStats).sort((a,b)=>b.bottles-a.bottles);const topScentName=sortedScents.length>0?sortedScents[0].name:'-';el('topScent').textContent=topScentName;el('totalBottlesSold').textContent=totalBottles;el('totalRevenueSales').textContent=`₱${totalRevenue.toFixed(2)}`;el('uniqueScentCount').textContent=sortedScents.length;const container=el('bestSellersContainer');if(sortedScents.length===0){container.innerHTML='<div class="muted" style="padding:10px">No sales data available.</div>';return;}container.innerHTML=`<table style="width:100%;border-collapse:collapse;margin-top:10px"><thead><tr style="background:#f8f9fa;border-bottom:2px solid #dee2e6"><th style="padding:12px;text-align:left;font-weight:700">Rank</th><th style="padding:12px;text-align:left;font-weight:700">Scent Name</th><th style="padding:12px;text-align:center;font-weight:700">Bottles Sold</th><th style="padding:12px;text-align:center;font-weight:700">Orders</th><th style="padding:12px;text-align:right;font-weight:700">Revenue</th><th style="padding:12px;text-align:center;font-weight:700">Action</th></tr></thead><tbody>${sortedScents.map((scent,idx)=>{const rank=idx+1;const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;return `<tr style="border-bottom:1px solid #f1f5ff"><td style="padding:14px 12px;font-weight:700;font-size:16px">${medal}</td><td style="padding:14px 12px;font-weight:600">${escape(scent.name)}</td><td style="padding:14px 12px;text-align:center;font-weight:600">${scent.bottles}</td><td style="padding:14px 12px;text-align:center;color:#667eea;font-weight:600">${scent.customers}</td><td style="padding:14px 12px;text-align:right;font-weight:700;color:#198754">₱${scent.revenue.toFixed(2)}</td><td style="padding:14px 12px;text-align:center"><button onclick="toggleScentDetails('${escapeAttr(scent.name)}')" class="small">Details</button></td></tr><tr id="details-${escapeAttr(scent.name)}" style="display:none;background:#f8f9fa"><td colspan="6" style="padding:12px"><div style="font-weight:600;margin-bottom:8px">Orders for ${escape(scent.name)}:</div><table style="width:100%;font-size:13px;margin-left:20px">${scent.orders.map(order=>`<tr><td style="padding:6px 0"><strong>${escape(order.customer)}</strong></td><td style="padding:6px 0;padding-left:20px">${order.quantity} x ${order.size}</td><td style="padding:6px 0;padding-left:20px">₱${order.amount.toFixed(2)}</td><td style="padding:6px 0;padding-left:20px"><span class="status-badge status-${order.status}">${order.status}</span></td><td style="padding:6px 0;padding-left:20px;color:#6b7280">${escape(order.batch)}</td></tr>`).join('')}</table></td></tr>`;}).join('')}</tbody></table>`;}
-function toggleScentDetails(scentName){const detailRow=document.getElementById(`details-${scentName}`);if(detailRow)detailRow.style.display=detailRow.style.display==='none'?'table-row':'none';}
+  let bulkHtml='';
+  if(!bf){
+    const bos=bulkOrders.filter(o=>{ const d=new Date(o.createdAt).toISOString().slice(0,10); if(fr&&d<fr) return false; if(to&&d>to) return false; return true; });
+    const toSt=st=>st==='sold'?'Paid':st==='added'?'Released':'Pending';
+    let blp=0,blr=0,bln=0;
+    const boHtml=bos.map(o=>{
+      let op=0,or=0,on=0;
+      const perfs=sf?o.perfumes.filter(p=>toSt(p.status)===sf):o.perfumes; if(!perfs.length&&sf) return '';
+      const pRows=perfs.map(p=>{ const st=toSt(p.status),a=p.price,dc=st==='Paid'?'#28a745':st==='Released'?'#0b7ec4':'#e6b800'; if(st==='Paid'){op+=a;tPaid+=a;}else if(st==='Released'){or+=a;tRel+=a;}else{on+=a;tPend+=a;} return `<tr style="background:#fafafa"><td style="padding:5px 10px 5px 24px;border-bottom:1px solid #f1f5ff;color:#555"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dc};margin-right:6px;vertical-align:middle"></span>${esc(p.name)}, ${p.size}</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5ff;text-align:right;font-weight:600">₱${a.toFixed(2)}</td></tr>`; }).join('');
+      blp+=op;blr+=or;bln+=on;
+      return `<tr style="border-top:2px solid #e6eef9;background:#fff"><td style="padding:10px;font-weight:700">${esc(o.customerName)} <span style="font-size:11px;color:#999">Bulk</span></td><td style="padding:10px;text-align:right;font-weight:800">₱${(op+or+on).toFixed(2)}</td></tr>${pRows}<tr><td colspan="2" style="padding:2px;border:none"></td></tr>`;
+    }).filter(Boolean).join('');
+    if(boHtml) bulkHtml=`<div class="card" style="margin-bottom:10px;border:2px solid #a78bfa"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;flex-wrap:wrap;gap:8px"><div><strong>All Bulk Orders</strong><div class="muted">${bos.length} orders</div></div>${sBar(blp,blr,bln)}</div><table style="width:100%"><thead><tr style="background:#f8f9fa"><th style="padding:8px 10px">Customer & Scents</th><th style="padding:8px 10px;text-align:right">Amount</th></tr></thead><tbody>${boHtml}</tbody></table></div>`;
+  }
+  let salesHTML = '';
+  if(bHtml) salesHTML += '<div style="font-weight:800;color:#667eea;margin-bottom:6px">🗂️ Batch Orders</div>' + bHtml;
+  if(bulkHtml) salesHTML += '<div style="font-weight:800;color:#667eea;margin:10px 0 6px">📦 Bulk Orders</div>' + bulkHtml;
+  $('salesContainer').innerHTML = salesHTML || '<div class="muted" style="padding:12px">No orders match filters.</div>';
+  $('totalPaid').textContent=`₱${tPaid.toFixed(2)}`;
+  $('totalPending').textContent=`₱${tRel.toFixed(2)}`;
+  $('totalUnpaid').textContent=`₱${tPend.toFixed(2)}`;
+  $('overallSales').textContent=`₱${(tPaid+tRel+tPend).toFixed(2)}`;
+}
 
-// UTILITIES
-function getSnapshot(){return{batches,inventory,expenses,bulkOrders,savedAt:new Date().toISOString()};}
-function exportData(){const blob=new Blob([JSON.stringify(getSnapshot(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='perfume_data.json';a.click();}
-async function importFromFile(e){const file=e.target.files[0];if(!file)return;try{const text=await file.text();const parsed=JSON.parse(text);batches=parsed.batches||[];inventory=parsed.inventory||[];expenses=parsed.expenses||[];bulkOrders=parsed.bulkOrders||[];await saveData();renderAll();alert('Imported successfully');}catch(err){alert('Import failed: '+err.message);}e.target.value='';}
-function escape(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));}
-function escapeAttr(s){return(s||'').replace(/"/g,'&quot;');}
-function sanitize(s){return(s||'').replace(/[^\w\-\s.]/g,'').replace(/\s+/g,'_');}
-function updateBatchFilters(){const batchOptions=`<option value="">All Batches</option>`+batches.map(b=>`<option value="${b.id}">${escape(b.name)}</option>`).join('');['expenseBatchFilter','salesBatchFilter','sellersBatchFilter'].forEach(id=>{if(el(id))el(id).innerHTML=batchOptions;});}
-async function clearAllData(){if(!confirm('Clear all data? This will permanently remove ALL data including cloud data.'))return;batches=[];inventory=[];expenses=[];bulkOrders=[];await saveToCloud();localStorage.removeItem('perfume_tracker_v1');renderAll();}
-function renderAll(){renderBatches();renderBulkOrders();renderInventory();renderExpenses();renderSales();renderBestSellers();updateScentDatalist();updateBatchFilters();}
+// ── BEST SELLERS ──
+function renderBestSellers(){
+  updateBatchFilters();
+  const bf=$('sellersBatchFilter').value, sf=$('sellersStatusFilter').value;
+  const stats={};let tb=0,tr=0;
+  batches.forEach(b=>{ if(bf&&b.id!=bf) return; b.customers.forEach(c=>{ if(sf&&c.status!==sf) return; c.scents.forEach(s=>{ if(!stats[s.name]) stats[s.name]={name:s.name,bottles:0,revenue:0,customers:0,orders:[]}; stats[s.name].bottles+=s.quantity; stats[s.name].revenue+=s.price*s.quantity; stats[s.name].customers+=1; stats[s.name].orders.push({customer:c.name,quantity:s.quantity,size:s.size,amount:s.price*s.quantity,status:c.status,batch:b.name}); tb+=s.quantity; tr+=s.price*s.quantity; }); }); });
+  const sorted=Object.values(stats).sort((a,b)=>b.bottles-a.bottles);
+  $('topScent').textContent=sorted[0]?.name||'-';
+  $('totalBottlesSold').textContent=tb;
+  $('totalRevenueSales').textContent=`₱${tr.toFixed(2)}`;
+  $('uniqueScentCount').textContent=sorted.length;
+  if(!sorted.length){ $('bestSellersContainer').innerHTML='<div class="muted" style="padding:10px">No data yet.</div>'; return; }
+  $('bestSellersContainer').innerHTML=`<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f8f9fa;border-bottom:2px solid #dee2e6"><th style="padding:12px">Rank</th><th style="padding:12px">Scent</th><th style="padding:12px;text-align:center">Bottles</th><th style="padding:12px;text-align:center">Orders</th><th style="padding:12px;text-align:right">Revenue</th><th style="padding:12px;text-align:center">Details</th></tr></thead><tbody>${sorted.map((s,i)=>{const m=i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;return `<tr style="border-bottom:1px solid #f1f5ff"><td style="padding:12px;font-size:16px;font-weight:700">${m}</td><td style="padding:12px;font-weight:600">${esc(s.name)}</td><td style="padding:12px;text-align:center;font-weight:600">${s.bottles}</td><td style="padding:12px;text-align:center;color:#667eea;font-weight:600">${s.customers}</td><td style="padding:12px;text-align:right;font-weight:700;color:#198754">₱${s.revenue.toFixed(2)}</td><td style="padding:12px;text-align:center"><button onclick="toggleDet('${escA(s.name)}')" class="small">Details</button></td></tr><tr id="det-${escA(s.name)}" style="display:none;background:#f8f9fa"><td colspan="6" style="padding:12px"><table style="font-size:13px">${s.orders.map(o=>`<tr><td style="padding:5px 8px"><strong>${esc(o.customer)}</strong></td><td style="padding:5px 8px">${o.quantity}x${o.size}</td><td style="padding:5px 8px">₱${o.amount.toFixed(2)}</td><td style="padding:5px 8px"><span class="status-badge status-${o.status}">${o.status}</span></td><td style="padding:5px 8px;color:#6b7280">${esc(o.batch)}</td></tr>`).join('')}</table></td></tr>`;}).join('')}</tbody></table>`;
+}
+function toggleDet(n){ const r=$('det-'+n); if(r) r.style.display=r.style.display==='none'?'table-row':'none'; }
 
-// ============================================================
+// ── UTILITIES ──
+function exportData(){ const b=new Blob([JSON.stringify(getSnap(),null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='perfume_data.json'; a.click(); }
+async function importFromFile(e){
+  const f=e.target.files[0]; if(!f) return;
+  try{ const t=await f.text(); const p=JSON.parse(t); batches=p.batches||[]; inventory=p.inventory||[]; expenses=p.expenses||[]; bulkOrders=p.bulkOrders||[]; await saveData(); renderAll(); alert('Imported!'); }catch(err){ alert('Import failed: '+err.message); }
+  e.target.value='';
+}
+async function clearAllData(){ if(!confirm('Delete ALL data including cloud? This cannot be undone.')) return; batches=[];inventory=[];expenses=[];bulkOrders=[]; await saveCloud(); saveLS(); renderAll(); }
+
+// ════════════════════════════════════════════════════
 // INIT
-// ============================================================
+// ════════════════════════════════════════════════════
 (async function init(){
-    // Load saved config
-    const cfg = getConfig();
-    if (cfg.url && cfg.key) {
-        document.getElementById('loginSetup').style.display = 'none';
-        initSupabase();
-    }
-
-    if (!supabase) return; // wait for user to configure
-
-    // Check for existing session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        currentUser = session.user;
-        await onLogin();
-    }
-
-    // Listen for auth changes
-    supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-            currentUser = session.user;
-            await onLogin();
-        }
-    });
+  const cfg=getCfg();
+  if(cfg.url&&cfg.key){
+    initSB();
+  }
+  if(!_sb){ return; } // show login, wait for configure
+  try{
+    const {data:{session}}=await _sb.auth.getSession();
+    if(session){ _user=session.user; await onLogin(); return; }
+  }catch(e){ console.error(e); }
+  // listen for auth state changes (e.g. email confirmation redirect)
+  _sb.auth.onAuthStateChange(async(ev,session)=>{
+    if(ev==='SIGNED_IN'&&session&&!_user){ _user=session.user; await onLogin(); }
+  });
 })();
 </script>
 </body>
