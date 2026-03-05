@@ -116,7 +116,7 @@ table tbody tr:hover{transform:translateX(4px)}
     <h2>🌸 Perfume Tracker</h2>
     <div class="sub">Cloud-Synced — Access Anywhere</div>
 
-    <div id="setupBox">
+    <div id="setupBox" style="display:none">
       <strong>⚙️ First time? 3 quick steps:</strong>
       <ol class="setup-steps">
         <li>Go to <strong>supabase.com</strong> → free account → New Project</li>
@@ -133,7 +133,7 @@ table tbody tr:hover{transform:translateX(4px)}
     <button class="btn-login" id="loginBtn" onclick="handleLogin()">Sign In</button>
     <div class="toggle-link" onclick="toggleAuthMode()">No account? <span id="toggleText">Sign up for free</span></div>
 
-    <div style="text-align:center;margin-top:16px">
+    <div style="display:none">
       <button id="cfgBtn" style="background:#f0f3ff;color:#667eea;font-size:13px;padding:8px 18px;border:2px solid #dbe6ff;border-radius:8px;cursor:pointer;font-weight:700" onclick="openCfg()">⚙️ Configure Supabase</button>
     </div>
   </div>
@@ -873,17 +873,14 @@ async function clearAllData(){ if(!confirm('Delete ALL data including cloud? Thi
 // ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
-// ── HARDCODED CONFIG — works on every device automatically ──
-const SUPABASE_URL = 'https://rggjndnqleqerbbyprmt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnZ2puZG5xbGVxZXJiYnlwcm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTE3MDksImV4cCI6MjA4ODI4NzcwOX0.dgUkl9NJzGZInTZRf0wpX6nRMgBNAXBNIPMaJNAjcNk';
-
 (async function init(){
-  // Always use hardcoded config
-  if(!getCfg().url){
-    localStorage.setItem('sb_cfg', JSON.stringify({url: SUPABASE_URL, key: SUPABASE_KEY}));
-  }
+  // Auto-configure on every device
+  localStorage.setItem('sb_cfg', JSON.stringify({
+    url: 'https://rggjndnqleqerbbyprmt.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnZ2puZG5xbGVxZXJiYnlwcm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MTE3MDksImV4cCI6MjA4ODI4NzcwOX0.dgUkl9NJzGZInTZRf0wpX6nRMgBNAXBNIPMaJNAjcNk'
+  }));
   initSB();
-  if(!_sb){ return; } // show login, wait for configure
+  if(!_sb){ return; }
   try{
     const {data:{session}}=await _sb.auth.getSession();
     if(session){ _user=session.user; await onLogin(); return; }
@@ -896,5 +893,3 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 </script>
 </body>
 </html>
-
-
